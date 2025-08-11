@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: ddd1a4ef42bdbb44896ab0cdf4197058
+guid: ff965fc80a255b341b8158bb0d914731
 ScriptedImporter:
   internalIDToNameTable: []
   externalObjects: {}
@@ -121,7 +121,7 @@ ScriptedImporter:
     tessellationDetail: 0
     uvTransform: {x: 0, y: 0}
   animatedSpriteImportData:
-  - name: cards
+  - name: base
     originalName: 
     pivot: {x: 0.5, y: 0}
     alignment: 9
@@ -130,9 +130,9 @@ ScriptedImporter:
       serializedVersion: 2
       x: 4
       y: 4
-      width: 340
-      height: 162
-    spriteID: d15c759cc2d5fba4a83e637599a73762
+      width: 2250
+      height: 1920
+    spriteID: 9ff456d08549ef14f8ba8bf511b8ea5b
     spriteBone: []
     spriteOutline: []
     vertices: []
@@ -144,21 +144,21 @@ ScriptedImporter:
   spriteSheetImportData: []
   asepriteLayers:
   - layerIndex: 0
-    guid: -930081285
-    name: cards
+    guid: 884911237
+    name: base
     layerFlags: 0
     layerType: 0
     blendMode: 0
     cells:
-    - name: cards
+    - name: base
       frameIndex: 0
       additiveSortOrder: 0
       cellRect:
         x: 0
         y: 0
-        width: 340
-        height: 162
-      spriteId: d15c759cc2d5fba4a83e637599a73762
+        width: 2250
+        height: 1920
+      spriteId: 9ff456d08549ef14f8ba8bf511b8ea5b
     linkedCells: []
     parentIndex: -1
   platformSettings:
@@ -177,4 +177,4 @@ ScriptedImporter:
   generatePhysicsShape: 0
   secondarySpriteTextures: []
   spritePackingTag: 
-  canvasSize: {x: 340, y: 163}
+  canvasSize: {x: 2250, y: 1920}
