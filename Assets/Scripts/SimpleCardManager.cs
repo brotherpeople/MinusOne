@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.UI;
 using System.Collections.Generic;
 
 public class SimpleGameManager : MonoBehaviour
@@ -8,6 +9,7 @@ public class SimpleGameManager : MonoBehaviour
     public Transform cardParent;
     public Transform leftZone;
     public Transform rightZone;
+    public Button confirmButton;
 
     [Header("Card Sprites")]
     public Sprite[] normalSprites = new Sprite[8];
@@ -20,26 +22,54 @@ public class SimpleGameManager : MonoBehaviour
     public Vector2 bottomRowPosition = new Vector2(-375f, -300f);
 
     private List<ClickableCard> allCards = new List<ClickableCard>();
-    private List<ClickableCard> disabledCards = new List<ClickableCard>(); // 다음 턴에 사용 불가한 카드들
+    private List<ClickableCard> disabledCards = new List<ClickableCard>();
     private ClickableCard leftZoneCard = null;
     private ClickableCard rightZoneCard = null;
 
     void Start()
     {
         CreateCards();
+        SetupConfirmButton();
+
+        // Generate AI selections for this round
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.GenerateAISelections();
+        }
+    }
+
+    void SetupConfirmButton()
+    {
+        if (confirmButton != null)
+        {
+            confirmButton.onClick.AddListener(OnConfirmButtonClicked);
+            confirmButton.interactable = false;
+        }
     }
 
     void CreateCards()
     {
+        // Get available cards for human player from GameManager
+        List<int> availableCards = new List<int>();
+        if (GameManager.Instance != null)
+        {
+            availableCards = GameManager.Instance.GetAvailableCards(0); // Player 0 is human
+        }
+        else
+        {
+            // Fallback: all cards available
+            for (int i = 1; i <= 8; i++)
+                availableCards.Add(i);
+        }
+
         for (int i = 0; i < 8; i++)
         {
             GameObject cardObj = Instantiate(cardPrefab, cardParent);
             ClickableCard card = cardObj.GetComponent<ClickableCard>();
 
-            // 카드 번호 설정
             card.SetCardNumber(i + 1);
 
-            // 스프라이트 설정
+            // Set sprites
             if (i < normalSprites.Length && normalSprites[i] != null)
                 card.normalSprite = normalSprites[i];
             if (i < selectedSprites.Length && selectedSprites[i] != null)
@@ -47,7 +77,7 @@ public class SimpleGameManager : MonoBehaviour
             if (i < disabledSprites.Length && disabledSprites[i] != null)
                 card.disabledSprite = disabledSprites[i];
 
-            // 위치 설정 (4장씩 2줄)
+            // Set position (4 cards per row)
             Vector3 cardPosition;
             if (i < 4)
                 cardPosition = new Vector3(topRowPosition.x + (i * cardSpacing), topRowPosition.y, 0);
@@ -56,18 +86,61 @@ public class SimpleGameManager : MonoBehaviour
 
             cardObj.GetComponent<RectTransform>().localPosition = cardPosition;
 
-            // 이벤트 연결
             card.OnCardClicked += OnCardClicked;
             allCards.Add(card);
+
+            // Set card state based on availability
+            if (!availableCards.Contains(i + 1))
+            {
+                card.SetDisabledState();
+                disabledCards.Add(card);
+            }
         }
+
+        Debug.Log($"Created cards - Available: {availableCards.Count}, Disabled: {disabledCards.Count}");
+    }
+
+    private void UpdateConfirmButton()
+    {
+        bool canConfirm = (leftZoneCard != null && rightZoneCard != null);
+        if (confirmButton != null)
+            confirmButton.interactable = canConfirm;
+    }
+
+    private void OnConfirmButtonClicked()
+    {
+        if (leftZoneCard != null && rightZoneCard != null)
+        {
+            Debug.Log($"Cards confirmed: Left({leftZoneCard.GetCardNumber()}), Right({rightZoneCard.GetCardNumber()})");
+
+            if (GameManager.Instance != null)
+                GameManager.Instance.SetGamePhase(GameManager.GamePhase.FieldPhase);
+
+            LoadFieldScene();
+        }
+    }
+
+    private void LoadFieldScene()
+    {
+        // Save selected card info
+        PlayerPrefs.SetInt("LeftCard", leftZoneCard.GetCardNumber());
+        PlayerPrefs.SetInt("RightCard", rightZoneCard.GetCardNumber());
+
+        if (GameManager.Instance != null)
+        {
+            PlayerPrefs.SetInt("CurrentRound", GameManager.Instance.currentRound);
+            PlayerPrefs.SetInt("AICount", GameManager.Instance.aiPlayerCount);
+        }
+
+        PlayerPrefs.Save();
+
+        UnityEngine.SceneManagement.SceneManager.LoadScene("FieldScene");
     }
 
     private void OnCardClicked(ClickableCard clickedCard)
     {
-        // 비활성화된 카드는 클릭 불가
         if (clickedCard.IsDisabled()) return;
 
-        // 카드가 원래 위치에 있으면 -> 존으로 이동
         if (clickedCard.IsInOriginalPosition())
         {
             if (leftZoneCard == null)
@@ -81,7 +154,6 @@ public class SimpleGameManager : MonoBehaviour
                 clickedCard.MoveToZone(rightZone);
             }
         }
-        // 카드가 존에 있으면 -> 원래 위치로 복귀
         else
         {
             if (clickedCard == leftZoneCard)
@@ -95,98 +167,38 @@ public class SimpleGameManager : MonoBehaviour
                 clickedCard.ReturnToOriginalPosition();
             }
         }
+
+        UpdateConfirmButton();
     }
 
-    // 테스트용 메서드
-    [ContextMenu("Clear All")]
-    public void ClearAll()
+    // Apply disabled cards from previous round
+    public void ApplyDisabledCards()
     {
-        if (leftZoneCard != null)
-        {
-            leftZoneCard.ReturnToOriginalPosition();
-            leftZoneCard = null;
-        }
-        if (rightZoneCard != null)
-        {
-            rightZoneCard.ReturnToOriginalPosition();
-            rightZoneCard = null;
-        }
-    }
-
-    // 최종 카드 선택 (왼쪽 카드를 최종 선택)
-    [ContextMenu("Choose Left Card")]
-    public void ChooseLeftCard()
-    {
-        if (leftZoneCard != null && rightZoneCard != null)
-        {
-            // 오른쪽 카드를 다음 턴 비활성화 목록에 추가
-            disabledCards.Add(rightZoneCard);
-            rightZoneCard.ReturnToOriginalPosition();
-
-            // 왼쪽 카드는 덱에서 제거 (게임오브젝트 비활성화)
-            leftZoneCard.gameObject.SetActive(false);
-            allCards.Remove(leftZoneCard);
-
-            Debug.Log($"카드 {leftZoneCard.GetCardNumber()}를 최종 선택! 카드 {rightZoneCard.GetCardNumber()}는 다음 턴 사용 불가");
-
-            leftZoneCard = null;
-            rightZoneCard = null;
-        }
-        else
-        {
-            Debug.Log("두 장의 카드를 모두 선택해주세요.");
-        }
-    }
-
-    // 최종 카드 선택 (오른쪽 카드를 최종 선택)
-    [ContextMenu("Choose Right Card")]
-    public void ChooseRightCard()
-    {
-        if (leftZoneCard != null && rightZoneCard != null)
-        {
-            // 왼쪽 카드를 다음 턴 비활성화 목록에 추가
-            disabledCards.Add(leftZoneCard);
-            leftZoneCard.ReturnToOriginalPosition();
-
-            // 오른쪽 카드는 덱에서 제거 (게임오브젝트 비활성화)
-            rightZoneCard.gameObject.SetActive(false);
-            allCards.Remove(rightZoneCard);
-
-            Debug.Log($"카드 {rightZoneCard.GetCardNumber()}를 최종 선택! 카드 {leftZoneCard.GetCardNumber()}는 다음 턴 사용 불가");
-
-            leftZoneCard = null;
-            rightZoneCard = null;
-        }
-        else
-        {
-            Debug.Log("두 장의 카드를 모두 선택해주세요.");
-        }
-    }
-
-    // 다음 턴 시작 (비활성화된 카드들을 disabled 상태로 변경)
-    [ContextMenu("Start Next Turn")]
-    public void StartNextTurn()
-    {
-        // 이전 턴에서 비활성화된 카드들을 disabled 상태로 변경
         foreach (ClickableCard card in disabledCards)
         {
             card.SetDisabledState();
         }
-
-        Debug.Log($"{disabledCards.Count}장의 카드가 이번 턴에 사용 불가능합니다.");
+        Debug.Log($"{disabledCards.Count} cards are disabled this round");
     }
 
-    // 턴 종료 후 disabled 카드들을 다시 사용 가능하게 만들기
-    [ContextMenu("End Turn")]
-    public void EndTurn()
+    // Clear disabled cards for next round
+    public void ClearDisabledCards()
     {
-        // disabled 상태의 카드들을 다시 normal 상태로 복구
         foreach (ClickableCard card in disabledCards)
         {
             card.SetNormalState();
         }
-
         disabledCards.Clear();
-        Debug.Log("비활성화된 카드들이 다시 사용 가능해졌습니다.");
+        Debug.Log("Disabled cards restored");
+    }
+
+    // Add card to disabled list (called from FieldScene)
+    public void AddToDisabledCards(int cardNumber)
+    {
+        ClickableCard card = allCards.Find(c => c.GetCardNumber() == cardNumber);
+        if (card != null && !disabledCards.Contains(card))
+        {
+            disabledCards.Add(card);
+        }
     }
 }

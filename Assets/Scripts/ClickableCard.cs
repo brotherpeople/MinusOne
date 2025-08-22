@@ -1,7 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
 
-// 간단한 클릭 기반 카드 시스템
 public class ClickableCard : MonoBehaviour
 {
     [Header("Card Data")]
@@ -14,7 +13,6 @@ public class ClickableCard : MonoBehaviour
     public Sprite selectedSprite;
     public Sprite disabledSprite;
 
-    private bool isSelected = false;
     private bool isDisabled = false;
     private Vector3 originalPosition;
     private Transform originalParent;
@@ -40,7 +38,6 @@ public class ClickableCard : MonoBehaviour
 
     public void SetNormalState()
     {
-        isSelected = false;
         isDisabled = false;
         if (cardImage != null && normalSprite != null)
             cardImage.sprite = normalSprite;
@@ -49,14 +46,12 @@ public class ClickableCard : MonoBehaviour
 
     public void SetSelectedState()
     {
-        isSelected = true;
         if (cardImage != null && selectedSprite != null)
             cardImage.sprite = selectedSprite;
     }
 
     public void SetDisabledState()
     {
-        isSelected = false;
         isDisabled = true;
         if (cardImage != null && disabledSprite != null)
             cardImage.sprite = disabledSprite;
@@ -78,7 +73,6 @@ public class ClickableCard : MonoBehaviour
     }
 
     public int GetCardNumber() => cardNumber;
-    public bool IsSelected() => isSelected;
     public bool IsDisabled() => isDisabled;
     public bool IsInOriginalPosition() => transform.parent == originalParent;
 
