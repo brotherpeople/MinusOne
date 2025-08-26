@@ -21,7 +21,7 @@ public class PlayerInfoPanel : MonoBehaviour
         // Set victory tokens
         if (victoryTokenText != null)
         {
-            victoryTokenText.text = $"Tokens: {victoryTokens}";
+            victoryTokenText.text = $"TOKENS: {victoryTokens}";
         }
 
         // Set actual card sprites

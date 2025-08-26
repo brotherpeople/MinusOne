@@ -1,6 +1,9 @@
 using UnityEngine;
 using UnityEngine.UI;
 using System.Collections.Generic;
+using System;
+using System.Collections;
+using TMPro;
 
 public class SimpleGameManager : MonoBehaviour
 {
@@ -21,6 +24,11 @@ public class SimpleGameManager : MonoBehaviour
     public Vector2 topRowPosition = new Vector2(-375f, 50f);
     public Vector2 bottomRowPosition = new Vector2(-375f, -300f);
 
+    [Header("Round Display")]
+    public GameObject roundDisplayPanel;
+    public TextMeshProUGUI roundNumberText;
+    public float roundDisplayDuration = 2f;
+
     private List<ClickableCard> allCards = new List<ClickableCard>();
     private List<ClickableCard> disabledCards = new List<ClickableCard>();
     private ClickableCard leftZoneCard = null;
@@ -28,6 +36,12 @@ public class SimpleGameManager : MonoBehaviour
 
     void Start()
     {
+        StartCoroutine(StartGameSequence());
+    }
+
+    IEnumerator StartGameSequence()
+    {
+        yield return StartCoroutine(ShowRoundNumber());
         CreateCards();
         SetupConfirmButton();
 
@@ -37,7 +51,57 @@ public class SimpleGameManager : MonoBehaviour
             GameManager.Instance.GenerateAISelections();
         }
     }
+    IEnumerator ShowRoundNumber()
+    {
+        int currentRound = GameManager.Instance.currentRound;
+        roundDisplayPanel.SetActive(true);
+        if (currentRound == 3 || currentRound == 6 || currentRound == 9 || currentRound == 12 || currentRound == 18)
+        {
+            roundNumberText.text = $"ROUND {currentRound}\n* SURVIVAL ROUND *";
+        }
+        else
+        {
+            roundNumberText.text = $"ROUND {currentRound}";
+        }
 
+        CanvasGroup canvasGroup = roundDisplayPanel.GetComponent<CanvasGroup>();
+        if (canvasGroup != null)
+        {
+            yield return StartCoroutine(FadeIn(canvasGroup, 0.5f));
+            yield return new WaitForSeconds(roundDisplayDuration);
+            yield return StartCoroutine(FadeOut(canvasGroup, 0.5f));
+        }
+        else
+        {
+            yield return new WaitForSeconds(roundDisplayDuration);
+        }
+
+        // Hide the panel
+        roundDisplayPanel.SetActive(false);
+    }
+    IEnumerator FadeIn(CanvasGroup canvasGroup, float duration)
+    {
+        float elapsed = 0f;
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            canvasGroup.alpha = Mathf.Lerp(0f, 1f, elapsed / duration);
+            yield return null;
+        }
+        canvasGroup.alpha = 1f;
+    }
+
+    IEnumerator FadeOut(CanvasGroup canvasGroup, float duration)
+    {
+        float elapsed = 0f;
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            canvasGroup.alpha = Mathf.Lerp(1f, 0f, elapsed / duration);
+            yield return null;
+        }
+        canvasGroup.alpha = 0f;
+    }
     void SetupConfirmButton()
     {
         if (confirmButton != null)
