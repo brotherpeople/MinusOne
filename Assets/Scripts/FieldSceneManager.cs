@@ -2,8 +2,9 @@ using UnityEngine;
 using UnityEngine.UI;
 using System.Collections;
 using TMPro;
+using UnityEngine.SceneManagement;
 
-public class FieldManager : MonoBehaviour
+public class FieldSceneManager : MonoBehaviour
 {
     [Header("Player Cards")]
     public Transform playerCardParent;
@@ -23,13 +24,9 @@ public class FieldManager : MonoBehaviour
     [Header("Submit Button")]
     public GameObject submitButtonPrefab;  // Prefab for submit button
     public Vector3 submitButtonOffset = new Vector3(0, -80, 0);  // Offset from card position
+
     [Header("Disabled text")]
     public GameObject disabledTextPrefab;     // Current disabled prefab
-
-    [Header("Result Display")]
-    public Transform resultCardParent;
-    public Vector3 resultStartPosition = new Vector3(-300f, 0f, 0f);
-    public float resultCardSpacing = 200f;
 
     [Header("Animation")]
     public float animationDuration = 1f;
@@ -50,10 +47,6 @@ public class FieldManager : MonoBehaviour
     private ClickableCard selectedCard = null;  // Currently selected card
     private GameObject submitButton = null;     // Current submit button
     private GameObject disabledText = null;     // Current disabledText
-
-
-    // Result cards storage
-    private int[] finalSubmittedCards;
 
     void Start()
     {
@@ -172,6 +165,7 @@ public class FieldManager : MonoBehaviour
                 Sprite leftCardSprite = normalSprites[aiLeftCards[i] - 1];
                 Sprite rightCardSprite = normalSprites[aiRightCards[i] - 1];
 
+                // Set up with card back sprites (hidden until result scene)
                 panels[i].SetupPlayer($"PLAYER {i + 1}", victoryTokens, leftCardSprite, rightCardSprite);
             }
         }
@@ -208,8 +202,8 @@ public class FieldManager : MonoBehaviour
     {
         Debug.Log($"Player clicked card: {clickedCard.GetCardNumber()}");
 
-        // If same card is clicked again or mouse right button clicked, deselect it
-        if (selectedCard == clickedCard || Input.GetMouseButtonDown(1))
+        // If same card is clicked again, deselect it
+        if (selectedCard == clickedCard)
         {
             HandleCardSelection(null);
             return;
@@ -284,161 +278,16 @@ public class FieldManager : MonoBehaviour
     {
         if (selectedCard != null)
         {
-            Destroy(submitButton);
-            Destroy(disabledText);
-            Debug.Log($"OnSubmitButtonClicked - aiPlayerCount: {aiPlayerCount}");
+            int submittedCard = selectedCard.GetCardNumber();
 
-            // Initialize result array first
-            finalSubmittedCards = new int[aiPlayerCount + 1]; // AI players + human player
-            Debug.Log($"Initialized finalSubmittedCards with length: {finalSubmittedCards.Length}");
+            Debug.Log($"Player submitted card: {submittedCard}");
 
-            ProcessPlayerSubmission();
-            ProcessAISubmissions();
+            // Save player's submitted card to PlayerPrefs
+            PlayerPrefs.SetInt("PlayerSubmittedCard", submittedCard);
+            PlayerPrefs.Save();
 
-            // Show all submitted cards in the center
-            ShowResultCards();
-
-            HandleCardSelection(null); // Deselect card and destroy button
-        }
-    }
-
-    void ProcessPlayerSubmission()
-    {
-        int submittedCard = selectedCard.GetCardNumber();
-        int tempStorageCard = (selectedCard == leftCard) ? rightCard.GetCardNumber() : leftCard.GetCardNumber();
-        Debug.Log($"Player submitted card: {submittedCard}, Temp storage: {tempStorageCard}");
-
-        if (GameManager.Instance != null)
-        {
-            GameManager.Instance.ProcessCardSubmission(0, submittedCard, tempStorageCard); // Player index 0
-        }
-
-        // Ensure array is initialized before accessing
-        if (finalSubmittedCards == null)
-        {
-            Debug.LogWarning("finalSubmittedCards is null in ProcessPlayerSubmission!");
-            return;
-        }
-
-        // Store player's submitted card (last position)
-        finalSubmittedCards[aiPlayerCount] = submittedCard;
-        Debug.Log($"Player card stored at position {aiPlayerCount}: {submittedCard}");
-
-    }
-
-    void ProcessAISubmissions()
-    {
-        // Ensure array is initialized before accessing
-        if (finalSubmittedCards == null)
-        {
-            Debug.LogWarning("finalSubmittedCards is null in ProcessAISubmissions!");
-            return;
-        }
-
-        for (int i = 0; i < aiPlayerCount; i++)
-        {
-            int playerIndex = i + 1; // AI players start from index 1
-
-            // Randomly choose between left and right card
-            bool chooseLeft = Random.Range(0, 2) == 0;
-            int submittedCard = chooseLeft ? aiLeftCards[i] : aiRightCards[i];
-            int tempStorageCard = chooseLeft ? aiRightCards[i] : aiLeftCards[i];
-
-            if (GameManager.Instance != null)
-            {
-                GameManager.Instance.ProcessCardSubmission(playerIndex, submittedCard, tempStorageCard);
-            }
-
-            // Store AI's submitted card
-            finalSubmittedCards[i] = submittedCard;
-
-            Debug.Log($"AI Player {i + 1} submitted: {submittedCard}, Temp storage: {tempStorageCard}");
-            Debug.Log($"AI card stored at position {i}: {submittedCard}");
-        }
-    }
-
-    void ShowResultCards()
-    {
-        if (finalSubmittedCards == null || resultCardParent == null)
-        {
-            Debug.LogWarning("Result cards data or parent not set!");
-            return;
-        }
-
-        // Update AI players' cards in their info panels
-        UpdateAIPlayerPanels();
-
-        // Create result cards with specified dimensions (110x140)
-        for (int i = 0; i < finalSubmittedCards.Length; i++)
-        {
-            GameObject resultCardObj = Instantiate(playerCardPrefab, resultCardParent);
-            ClickableCard resultCard = resultCardObj.GetComponent<ClickableCard>();
-
-            int cardNumber = finalSubmittedCards[i];
-            resultCard.SetCardNumber(cardNumber);
-            resultCard.normalSprite = normalSprites[cardNumber - 1];
-            resultCard.cardImage.sprite = resultCard.normalSprite;
-
-            // Disable clicking on result cards
-            resultCard.GetComponent<Button>().interactable = false;
-
-            // Set card dimensions to 110x140
-            RectTransform rectTransform = resultCardObj.GetComponent<RectTransform>();
-            rectTransform.sizeDelta = new Vector2(110f, 140f);
-
-            // Position cards horizontally
-            Vector3 cardPosition = resultStartPosition + new Vector3(i * resultCardSpacing, 0f, 0f);
-            rectTransform.localPosition = cardPosition;
-
-            // Add player label
-            string playerLabel = (i < aiPlayerCount) ? $"PLAYER {i + 1}" : "YOU";
-            Debug.Log($"Result card {i}: {playerLabel} played {cardNumber}");
-        }
-
-        Debug.Log("All result cards displayed with updated player cards");
-
-        // TODO: Calculate and show winner
-        // TODO: Add continue button for next round
-    }
-
-    void UpdateAIPlayerPanels()
-    {
-        PlayerInfoPanel[] panels = { leftPlayerPanel, topPlayerPanel, rightPlayerPanel };
-
-        for (int i = 0; i < aiPlayerCount && i < 3; i++)
-        {
-            if (panels[i] != null)
-            {
-                int submittedCard = finalSubmittedCards[i];
-
-                // Determine which card was submitted and update sprites accordingly
-                Sprite leftCardSprite, rightCardSprite;
-
-                if (aiLeftCards[i] == submittedCard)
-                {
-                    // Left card was submitted - use selected sprite for left, normal for right
-                    leftCardSprite = selectedSprites[aiLeftCards[i] - 1];
-                    rightCardSprite = disabledSprites[aiRightCards[i] - 1]; // Right card goes to temp storage
-                }
-                else
-                {
-                    // Right card was submitted - use selected sprite for right, normal for left
-                    leftCardSprite = disabledSprites[aiLeftCards[i] - 1]; // Left card goes to temp storage
-                    rightCardSprite = selectedSprites[aiRightCards[i] - 1];
-                }
-
-                // Get victory tokens from GameManager
-                int victoryTokens = 0;
-                if (GameManager.Instance != null && i + 1 < GameManager.Instance.victoryTokens.Length)
-                {
-                    victoryTokens = GameManager.Instance.victoryTokens[i + 1];
-                }
-
-                // Update the panel with new sprites
-                panels[i].SetupPlayer($"PLAYER {i + 1}", victoryTokens, leftCardSprite, rightCardSprite);
-
-                Debug.Log($"AI Player {i + 1} panel updated - Submitted: {submittedCard}");
-            }
+            // Load Result Scene
+            SceneManager.LoadScene("ResultScene");
         }
     }
     #endregion

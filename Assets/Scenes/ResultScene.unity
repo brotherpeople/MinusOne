@@ -1188,15 +1188,30 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 688169079}
-  - component: {fileID: 688169078}
+  - component: {fileID: 688169080}
   m_Layer: 0
-  m_Name: FieldManager
+  m_Name: ResultManager
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &688169078
+--- !u!4 &688169079
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 688169077}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -0.23043667, y: 0.32921058, z: 0.016361829}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &688169080
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -1205,11 +1220,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 688169077}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a54248caa3b5929469dbaaadfd62d05b, type: 3}
+  m_Script: {fileID: 11500000, guid: f44de4ad210d7a64ca2d858365e161a2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  playerCardParent: {fileID: 695822387}
-  playerCardPrefab: {fileID: 3938304694205747246, guid: 9ff819ada4029be4c8d7bc7fb8d655ac, type: 3}
   leftPlayerPanel: {fileID: 355559215}
   topPlayerPanel: {fileID: 1541127245}
   rightPlayerPanel: {fileID: 1321855067}
@@ -1241,25 +1254,11 @@ MonoBehaviour:
   - {fileID: 221484760, guid: ed4a2f1c172e54d4fbed2ddf53154388, type: 3}
   - {fileID: 1446272632, guid: ed4a2f1c172e54d4fbed2ddf53154388, type: 3}
   cardBackSprite: {fileID: -709144055, guid: ed4a2f1c172e54d4fbed2ddf53154388, type: 3}
-  submitButtonPrefab: {fileID: 5373423724209701455, guid: b6cf3ff3c9699ea4ea55c695ff6f0c22, type: 3}
-  submitButtonOffset: {x: 0, y: -200, z: 0}
-  disabledTextPrefab: {fileID: 1578043370232154901, guid: 2fc8cd70b39751a4eb1c4bb970146cc4, type: 3}
-  animationDuration: 1
---- !u!4 &688169079
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 688169077}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -0.23043667, y: 0.32921058, z: 0.016361829}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  resultCardParent: {fileID: 1106065476}
+  playerCardPrefab: {fileID: 3938304694205747246, guid: 9ff819ada4029be4c8d7bc7fb8d655ac, type: 3}
+  playerTextPrefab: {fileID: 6618144312772094319, guid: 3f71f6f9ae2cc964084bb8488b7b9cf7, type: 3}
+  resultStartPosition: {x: -195, y: 0, z: 0}
+  resultCardSpacing: 130
 --- !u!1 &695822386
 GameObject:
   m_ObjectHideFlags: 0
@@ -1589,7 +1588,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: 200}
+  m_AnchoredPosition: {x: 0, y: 150}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &1282395687

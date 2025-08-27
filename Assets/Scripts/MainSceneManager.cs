@@ -5,7 +5,7 @@ using System;
 using System.Collections;
 using TMPro;
 
-public class SimpleGameManager : MonoBehaviour
+public class MainSceneManager : MonoBehaviour
 {
     [Header("Setup")]
     public GameObject cardPrefab;
