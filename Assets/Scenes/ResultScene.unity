@@ -179,7 +179,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 'CHOOSE YOUR CARD
+  m_text: 'DRAG YOUR CARD HERE
 
     - LOWER IS THE BEST -'
   m_isRightToLeft: 0
@@ -636,10 +636,10 @@ RectTransform:
   - {fileID: 2095292410}
   m_Father: {fileID: 1777827476}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0.5}
-  m_AnchorMax: {x: 0, y: 0.5}
-  m_AnchoredPosition: {x: 540, y: 225}
-  m_SizeDelta: {x: 600, y: 350}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: 0, y: 50}
+  m_SizeDelta: {x: 780, y: 700}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &341141390
 MonoBehaviour:
@@ -653,10 +653,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0698fbd18661bd846a342a531a99c6a6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  playerNameText: {fileID: 61275105}
+  playerNameText: {fileID: 809003764908458401, guid: 3f71f6f9ae2cc964084bb8488b7b9cf7, type: 3}
   victoryTokenText: {fileID: 0}
-  leftCardImage: {fileID: 602308705}
-  rightCardImage: {fileID: 1584056994}
+  leftCardImage: {fileID: 2253420749922354316, guid: 9ff819ada4029be4c8d7bc7fb8d655ac, type: 3}
+  rightCardImage: {fileID: 2253420749922354316, guid: 9ff819ada4029be4c8d7bc7fb8d655ac, type: 3}
 --- !u!114 &341141391
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -670,7 +670,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 0.392}
+  m_Color: {r: 0.85983825, g: 0.55507076, b: 0.55507076, a: 0.392}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -708,7 +708,7 @@ GameObject:
   - component: {fileID: 355559217}
   - component: {fileID: 355559215}
   m_Layer: 5
-  m_Name: LeftPlayerPanel
+  m_Name: FirstPlayerPanel
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1220,12 +1220,13 @@ MonoBehaviour:
   m_GameObject: {fileID: 688169077}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f44de4ad210d7a64ca2d858365e161a2, type: 3}
+  m_Script: {fileID: 11500000, guid: a54248caa3b5929469dbaaadfd62d05b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  leftPlayerPanel: {fileID: 355559215}
-  topPlayerPanel: {fileID: 1541127245}
-  rightPlayerPanel: {fileID: 1321855067}
+  currentScene: 2
+  cardPrefab: {fileID: 3938304694205747246, guid: 9ff819ada4029be4c8d7bc7fb8d655ac, type: 3}
+  fieldCardPrefab: {fileID: 3938304694205747246, guid: c72d29c4b61bb844682206f1e1c708dc, type: 3}
+  cardParent: {fileID: 695822387}
   normalSprites:
   - {fileID: -1208213708, guid: ed4a2f1c172e54d4fbed2ddf53154388, type: 3}
   - {fileID: 918702918, guid: ed4a2f1c172e54d4fbed2ddf53154388, type: 3}
@@ -1253,12 +1254,20 @@ MonoBehaviour:
   - {fileID: 326015756, guid: ed4a2f1c172e54d4fbed2ddf53154388, type: 3}
   - {fileID: 221484760, guid: ed4a2f1c172e54d4fbed2ddf53154388, type: 3}
   - {fileID: 1446272632, guid: ed4a2f1c172e54d4fbed2ddf53154388, type: 3}
-  cardBackSprite: {fileID: -709144055, guid: ed4a2f1c172e54d4fbed2ddf53154388, type: 3}
+  leftZone: {fileID: 237742704}
+  rightZone: {fileID: 722562424}
+  confirmButton: {fileID: 0}
+  submitArea: {fileID: 341141389}
+  submitAreaImage: {fileID: 341141391}
+  normalAreaColor: {r: 1, g: 1, b: 1, a: 1}
+  highlightAreaColor: {r: 0, g: 1, b: 0, a: 1}
   resultCardParent: {fileID: 1106065476}
-  playerCardPrefab: {fileID: 3938304694205747246, guid: 9ff819ada4029be4c8d7bc7fb8d655ac, type: 3}
-  playerTextPrefab: {fileID: 6618144312772094319, guid: 3f71f6f9ae2cc964084bb8488b7b9cf7, type: 3}
-  resultStartPosition: {x: -195, y: 0, z: 0}
-  resultCardSpacing: 130
+  aiPanels:
+  - {fileID: 355559215}
+  - {fileID: 1541127245}
+  - {fileID: 1321855067}
+  roundDisplayPanel: {fileID: 0}
+  roundNumberText: {fileID: 0}
 --- !u!1 &695822386
 GameObject:
   m_ObjectHideFlags: 0
@@ -1588,7 +1597,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: 150}
+  m_AnchoredPosition: {x: 0, y: 200}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &1282395687
@@ -1679,7 +1688,7 @@ GameObject:
   - component: {fileID: 1321855069}
   - component: {fileID: 1321855067}
   m_Layer: 5
-  m_Name: RightPlayerPanel
+  m_Name: ThirdPlayerPanel
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1811,7 +1820,7 @@ GameObject:
   - component: {fileID: 1541127243}
   - component: {fileID: 1541127245}
   m_Layer: 5
-  m_Name: TopPlayerPanel
+  m_Name: SecondPlayerPanel
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2515,11 +2524,11 @@ RectTransform:
   m_Children:
   - {fileID: 237742704}
   - {fileID: 722562424}
-  - {fileID: 695822387}
   - {fileID: 355559216}
   - {fileID: 1541127242}
   - {fileID: 1321855068}
   - {fileID: 341141389}
+  - {fileID: 695822387}
   - {fileID: 1106065476}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}

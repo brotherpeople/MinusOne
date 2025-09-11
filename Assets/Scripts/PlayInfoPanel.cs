@@ -10,35 +10,11 @@ public class PlayerInfoPanel : MonoBehaviour
     public Image leftCardImage;
     public Image rightCardImage;
 
-    public void SetupPlayer(string playerName, int victoryTokens, Sprite leftCardSprite, Sprite rightCardSprite)
+    public void Setup(string playerName, int tokens, Sprite leftSprite, Sprite rightSprite)
     {
-        // Set player name
-        if (playerNameText != null)
-        {
-            playerNameText.text = playerName;
-        }
-
-        // Set victory tokens
-        if (victoryTokenText != null)
-        {
-            victoryTokenText.text = $"TOKENS: {victoryTokens}";
-        }
-
-        // Set actual card sprites
-        if (leftCardImage != null && leftCardSprite != null)
-        {
-            leftCardImage.sprite = leftCardSprite;
-        }
-
-        if (rightCardImage != null && rightCardSprite != null)
-        {
-            rightCardImage.sprite = rightCardSprite;
-        }
-    }
-
-    // Overload method for backward compatibility (using card back)
-    public void SetupPlayer(string playerName, int victoryTokens, Sprite cardBackSprite)
-    {
-        SetupPlayer(playerName, victoryTokens, cardBackSprite, cardBackSprite);
+        if (playerNameText) playerNameText.text = playerName;
+        if (victoryTokenText) victoryTokenText.text = $"TOKENS: {tokens}";
+        if (leftCardImage) leftCardImage.sprite = leftSprite;
+        if (rightCardImage) rightCardImage.sprite = rightSprite;
     }
 }

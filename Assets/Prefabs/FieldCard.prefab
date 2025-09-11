@@ -143,12 +143,12 @@ MonoBehaviour:
   m_GameObject: {fileID: 3938304694205747246}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 541106a60aca15545b0eed08bd8af250, type: 3}
+  m_Script: {fileID: 11500000, guid: a0e837337ca3d984f9c2be2726bd0097, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   cardNumber: 1
   cardImage: {fileID: 2253420749922354316}
-  cardButton: {fileID: 7105127522228881539}
   normalSprite: {fileID: 0}
   selectedSprite: {fileID: 0}
   disabledSprite: {fileID: 0}
+  isDraggable: 1

@@ -133,7 +133,7 @@ GameObject:
   - component: {fileID: 152638193}
   - component: {fileID: 152638192}
   m_Layer: 0
-  m_Name: CardTestManager
+  m_Name: MainSceneManager
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -148,14 +148,12 @@ MonoBehaviour:
   m_GameObject: {fileID: 152638191}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 751b346c8964ffb4d9c64c5fb09e20c5, type: 3}
+  m_Script: {fileID: 11500000, guid: a54248caa3b5929469dbaaadfd62d05b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  currentScene: 0
   cardPrefab: {fileID: 3938304694205747246, guid: 9ff819ada4029be4c8d7bc7fb8d655ac, type: 3}
   cardParent: {fileID: 397300829}
-  leftZone: {fileID: 2101602569}
-  rightZone: {fileID: 1981783202}
-  confirmButton: {fileID: 257218202}
   normalSprites:
   - {fileID: -1208213708, guid: ed4a2f1c172e54d4fbed2ddf53154388, type: 3}
   - {fileID: 918702918, guid: ed4a2f1c172e54d4fbed2ddf53154388, type: 3}
@@ -183,12 +181,21 @@ MonoBehaviour:
   - {fileID: 326015756, guid: ed4a2f1c172e54d4fbed2ddf53154388, type: 3}
   - {fileID: 221484760, guid: ed4a2f1c172e54d4fbed2ddf53154388, type: 3}
   - {fileID: 1446272632, guid: ed4a2f1c172e54d4fbed2ddf53154388, type: 3}
-  cardSpacing: 250
-  topRowPosition: {x: -375, y: 50}
-  bottomRowPosition: {x: -375, y: -300}
+  leftZone: {fileID: 2101602569}
+  rightZone: {fileID: 1981783202}
+  confirmButton: {fileID: 257218202}
+  submitArea: {fileID: 0}
+  submitAreaImage: {fileID: 0}
+  normalAreaColor: {r: 1, g: 1, b: 1, a: 1}
+  highlightAreaColor: {r: 0, g: 1, b: 0, a: 1}
+  resultCardParent: {fileID: 0}
+  playerTextPrefab: {fileID: 0}
+  aiPanels:
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
   roundDisplayPanel: {fileID: 371356017}
   roundNumberText: {fileID: 824964663}
-  roundDisplayDuration: 2
 --- !u!4 &152638193
 Transform:
   m_ObjectHideFlags: 0
@@ -198,11 +205,11 @@ Transform:
   m_GameObject: {fileID: 152638191}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 11.552368, y: 138.49243, z: 2.658764}
+  m_LocalPosition: {x: 551.55237, y: 1098.4924, z: 2.658764}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 255240677}
+  m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &255240673
 GameObject:
@@ -301,7 +308,6 @@ RectTransform:
   - {fileID: 2101602569}
   - {fileID: 1981783202}
   - {fileID: 397300829}
-  - {fileID: 152638193}
   - {fileID: 257218201}
   - {fileID: 371356018}
   m_Father: {fileID: 0}
@@ -496,7 +502,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 0, g: 0, b: 0, a: 0.392}
+  m_Color: {r: 0, g: 0, b: 0, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -1013,13 +1019,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2ac090b8e9d07cd41952556924cb9dea, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  aiPlayerCount: 3
-  currentRound: 3
+  activePlayers: 00000000010000000200000003000000
+  currentRound: 1
   maxRounds: 18
-  playerScores: 
-  victoryTokens: 
-  allPlayersCardData: []
-  currentPhase: 0
 --- !u!4 &1527768862
 Transform:
   m_ObjectHideFlags: 0
@@ -1192,4 +1194,5 @@ SceneRoots:
   - {fileID: 695004964}
   - {fileID: 255240677}
   - {fileID: 693875008}
+  - {fileID: 152638193}
   - {fileID: 1527768862}
