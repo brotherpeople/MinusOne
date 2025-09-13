@@ -38,6 +38,12 @@ public class UnifiedSceneManager : MonoBehaviour
     public PlayerInfoPanel[] aiPanels = new PlayerInfoPanel[3];
     public GameObject playerTextPrefab;
     public GameObject shouldBeFadedOutText;
+    public GameObject nextRoundButton;
+    [Header("Winner Reason UI")]
+    public GameObject winnerReasonPrefab;
+    public Transform uiParent;
+    private GameObject currentReasonUI;
+    private TextMeshProUGUI reasonText;
 
     [Header("Round Display")]
     public GameObject roundDisplayPanel;
@@ -128,14 +134,25 @@ public class UnifiedSceneManager : MonoBehaviour
 
     void OnConfirmClicked()
     {
-        PlayerPrefs.SetInt("LeftCard", leftZoneCard.GetCardNumber());
-        PlayerPrefs.SetInt("RightCard", rightZoneCard.GetCardNumber());
+        int leftCard = leftZoneCard.GetCardNumber();
+        int rightCard = rightZoneCard.GetCardNumber();
+        
+        PlayerPrefs.SetInt("LeftCard", leftCard);
+        PlayerPrefs.SetInt("RightCard", rightCard);
         PlayerPrefs.SetInt("CurrentRound", GameManager.Instance?.currentRound ?? 1);
+
+        var humanData = GameManager.Instance?.GetPlayerData(Player.Human);
+        if (humanData != null)
+        {
+            humanData.selectedLeftCard = leftCard;
+            humanData.selectedRightCard = rightCard;
+            Debug.Log($"Human selected: Left={leftCard}, Right={rightCard}");
+        }
 
         currentScene = SceneType.Field;
         ClearScene();
         SceneManager.LoadScene("FieldScene");
-        StartFieldScene();
+        // StartFieldScene();
     }
     #endregion
 
@@ -325,9 +342,10 @@ public class UnifiedSceneManager : MonoBehaviour
     #region Result Scene (isDraggable = false)
     void StartResultScene()
     {
-
+        nextRoundButton.SetActive(false);
         CreateResultCards();
         UpdateAIPanels();
+        DetermineWinner();
         StartCoroutine(FadeOutText(shouldBeFadedOutText));
         StartCoroutine(MoveCardsUp(resultCardParent));
     }
@@ -427,10 +445,6 @@ public class UnifiedSceneManager : MonoBehaviour
 
             Debug.Log($"Created text for {player.GetDisplayName()} at position {textRect.localPosition}");
         }
-        else
-        {
-            Debug.LogWarning("p1TextPrefab is not assigned!");
-        }
 
         Debug.Log($"Card {cardNumber} sprite set: {card.normalSprite?.name ?? "NULL"}");
 
@@ -470,6 +484,119 @@ public class UnifiedSceneManager : MonoBehaviour
                         aiPanels[i].Setup(player.GetDisplayName(), data.victoryTokens, leftSprite, rightSprite);
                     }
                 }
+            }
+        }
+    }
+
+    void DetermineWinner()
+    {
+        var submissions = GameManager.Instance?.GetCurrentSubmissions();
+        if (submissions == null) return;
+
+        CreateWinnerReasonUI();
+
+        var uniqueCards = submissions
+            .GroupBy(x => x.Value)                    
+            .Where(g => g.Count() == 1)               
+            .OrderBy(g => g.Key)                      
+            .ToList();
+
+        if (uniqueCards.Any())
+        {
+            var winner = uniqueCards.First().First();
+            var winningCard = uniqueCards.First().Key;
+            
+            GameManager.Instance?.AddScore(winner.Key, winningCard);
+            var winnerData = GameManager.Instance?.GetPlayerData(winner.Key);
+            if (winnerData != null) winnerData.victoryTokens += 1;
+
+            ShowWinnerText(winner.Key, winningCard, submissions);
+        }
+        else
+        {
+            ShowNoWinnerText(submissions);
+        }
+    }
+
+    void ShowWinnerText(Player winner, int winningCard, Dictionary<Player, int> submissions)
+    {
+        List<string> messages = new List<string>();
+
+        messages.Add($"{winner.GetDisplayName()} wins with card {winningCard}!");
+        messages.Add($"{winner.GetDisplayName()} gets {winningCard} points!");
+        messages.Add($"{winner.GetDisplayName()} gets 1 victory token!");
+
+        StartCoroutine(TypewriterEffect(messages));
+    }
+
+
+    void ShowNoWinnerText(Dictionary<Player, int> submissions)
+    {
+        List<string> messages = new List<string>();
+
+        messages.Add("All cards are duplicated!");
+        messages.Add("No winner this round!");
+        messages.Add("No points or tokens awarded!");
+
+        StartCoroutine(TypewriterEffect(messages));
+    }
+
+
+    IEnumerator TypewriterEffect(List<string> messages)
+    {
+        if (reasonText == null) yield break;
+
+        reasonText.text = "";
+        string fullText = "";
+
+        foreach (string message in messages)
+        {
+            for (int i = 0; i < message.Length; i++)
+            {
+                fullText += message[i];
+                reasonText.text = fullText;
+                yield return new WaitForSeconds(0.05f);
+            }
+
+            fullText += "\n";
+            reasonText.text = fullText;
+
+            yield return new WaitForSeconds(0.8f);
+        }
+
+        yield return new WaitForSeconds(2f);
+        nextRoundButton.SetActive(true);
+
+    }
+    public void ProceedToNextRound()
+    {
+        if (currentReasonUI != null)
+        {
+            Destroy(currentReasonUI);
+        }
+
+        GameManager.Instance?.ClearSubmissions();
+        GameManager.Instance?.ClearDisabledCards();
+
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.currentRound++;
+        }
+
+        nextRoundButton.SetActive(false);
+        SceneManager.LoadScene("CardSelectionScene");
+    }
+
+    void CreateWinnerReasonUI()
+    {
+        if (winnerReasonPrefab != null && uiParent != null)
+        {
+            currentReasonUI = Instantiate(winnerReasonPrefab, uiParent);
+            reasonText = currentReasonUI.GetComponentInChildren<TextMeshProUGUI>();
+            
+            if (reasonText != null)
+            {
+                reasonText.text = ""; // 초기화
             }
         }
     }

@@ -133,7 +133,7 @@ GameObject:
   - component: {fileID: 152638193}
   - component: {fileID: 152638192}
   m_Layer: 0
-  m_Name: MainSceneManager
+  m_Name: CardSelectionSceneManager
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -153,6 +153,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   currentScene: 0
   cardPrefab: {fileID: 3938304694205747246, guid: 9ff819ada4029be4c8d7bc7fb8d655ac, type: 3}
+  fieldCardPrefab: {fileID: 0}
   cardParent: {fileID: 397300829}
   normalSprites:
   - {fileID: -1208213708, guid: ed4a2f1c172e54d4fbed2ddf53154388, type: 3}
@@ -188,12 +189,16 @@ MonoBehaviour:
   submitAreaImage: {fileID: 0}
   normalAreaColor: {r: 1, g: 1, b: 1, a: 1}
   highlightAreaColor: {r: 0, g: 1, b: 0, a: 1}
+  disabledTextPrefab: {fileID: 0}
   resultCardParent: {fileID: 0}
-  playerTextPrefab: {fileID: 0}
   aiPanels:
   - {fileID: 0}
   - {fileID: 0}
   - {fileID: 0}
+  playerTextPrefab: {fileID: 0}
+  shouldBeFadedOutText: {fileID: 0}
+  winnerReasonPrefab: {fileID: 0}
+  uiParent: {fileID: 0}
   roundDisplayPanel: {fileID: 371356017}
   roundNumberText: {fileID: 824964663}
 --- !u!4 &152638193

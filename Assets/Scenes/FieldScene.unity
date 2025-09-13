@@ -1176,6 +1176,9 @@ MonoBehaviour:
   - {fileID: 355559215}
   - {fileID: 1541127245}
   - {fileID: 1321855067}
+  playerTextPrefab: {fileID: 0}
+  shouldBeFadedOutText: {fileID: 0}
+  playerCardParentInResult: {fileID: 0}
   roundDisplayPanel: {fileID: 0}
   roundNumberText: {fileID: 0}
 --- !u!4 &688169079

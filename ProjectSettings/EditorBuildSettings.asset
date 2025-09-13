@@ -6,7 +6,7 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/Scenes/MainScene.unity
+    path: Assets/Scenes/CardSelectionScene.unity
     guid: b5f1c02aa0141ee4196e3dbf6fbd517e
   - enabled: 1
     path: Assets/Scenes/FieldScene.unity
