@@ -8,10 +8,12 @@ public class GameManager : MonoBehaviour
     public List<Player> activePlayers = new List<Player> { Player.Human, Player.AI_1, Player.AI_2, Player.AI_3 };
     public int currentRound = 1;
     public int maxRounds = 18;
-    
+    [Header("Round Data")]
+    private Dictionary<Player, int> currentRoundSubmissions = new Dictionary<Player, int>();
+
     // Unified player data storage
     private Dictionary<Player, PlayerData> playerData = new Dictionary<Player, PlayerData>();
-    
+
     public static GameManager Instance { get; private set; }
 
     [System.Serializable]
@@ -24,7 +26,7 @@ public class GameManager : MonoBehaviour
         public List<int> disabledCards = new List<int>();
         public int selectedLeftCard = 0;
         public int selectedRightCard = 0;
-        
+
         public List<int> GetPlayableCards() => availableCards.Where(c => !disabledCards.Contains(c)).ToList();
     }
 
@@ -54,7 +56,7 @@ public class GameManager : MonoBehaviour
     public List<Player> GetActivePlayers() => activePlayers.Where(p => !playerData[p].isEliminated).ToList();
     public PlayerData GetPlayerData(Player player) => playerData.ContainsKey(player) ? playerData[player] : null;
     public void EliminatePlayer(Player player) => playerData[player].isEliminated = true;
-    
+
     public void AddScore(Player player, int score)
     {
         playerData[player].score += score;
@@ -67,7 +69,7 @@ public class GameManager : MonoBehaviour
         {
             var data = playerData[player];
             var playable = data.GetPlayableCards();
-            
+
             if (playable.Count >= 2)
             {
                 var selected = playable.OrderBy(x => Random.value).Take(2).ToArray();
@@ -91,4 +93,18 @@ public class GameManager : MonoBehaviour
             data.disabledCards.Clear();
         }
     }
+    public void SetPlayerSubmission(Player player, int cardNumber)
+    {
+        currentRoundSubmissions[player] = cardNumber;
+        Debug.Log($"{player.GetDisplayName()} submitted card: {cardNumber}");
+    }
+    public Dictionary<Player, int> GetCurrentSubmissions()
+    {
+        return new Dictionary<Player, int>(currentRoundSubmissions);
+    }
+    public void ClearSubmissions()
+    {
+        currentRoundSubmissions.Clear();
+    }
+
 }

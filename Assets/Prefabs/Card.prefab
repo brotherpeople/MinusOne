@@ -152,3 +152,4 @@ MonoBehaviour:
   selectedSprite: {fileID: 0}
   disabledSprite: {fileID: 0}
   isDraggable: 0
+  disabledTextPrefab: {fileID: 1578043370232154901, guid: 2fc8cd70b39751a4eb1c4bb970146cc4, type: 3}

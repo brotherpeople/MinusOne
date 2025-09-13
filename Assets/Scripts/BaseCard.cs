@@ -2,18 +2,19 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
 using System.Collections;
+using TMPro;
 
 public class BaseCard : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler
 {
     [Header("Card Data")]
     public int cardNumber = 1;
     public Image cardImage;
-    
+
     [Header("Sprites")]
     public Sprite normalSprite;
     public Sprite selectedSprite;
     public Sprite disabledSprite;
-    
+
     [Header("Interaction Settings")]
     public bool isDraggable = false;
 
@@ -32,11 +33,12 @@ public class BaseCard : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDrag
         originalPosition = transform.localPosition;
         originalParent = transform.parent;
         canvasGroup = GetComponent<CanvasGroup>() ?? gameObject.AddComponent<CanvasGroup>();
-        
-        GetComponent<Button>().onClick.AddListener(() => {
+
+        GetComponent<Button>().onClick.AddListener(() =>
+        {
             if (!isDragging) OnCardClicked?.Invoke(this);
         });
-        
+
         SetNormalState();
     }
 
@@ -92,7 +94,7 @@ public class BaseCard : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDrag
         Vector3 startPos = transform.localPosition;
         float elapsed = 0f;
         float duration = 0.2f;
-        
+
         while (elapsed < duration)
         {
             elapsed += Time.deltaTime;
@@ -100,7 +102,7 @@ public class BaseCard : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDrag
             transform.localPosition = Vector3.Lerp(startPos, targetPosition, t);
             yield return null;
         }
-        
+
         transform.localPosition = targetPosition;
     }
 
@@ -108,7 +110,7 @@ public class BaseCard : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDrag
     public void OnBeginDrag(PointerEventData eventData)
     {
         if (!isDraggable || isDisabled) return;
-        
+
         isDragging = true;
         canvasGroup.alpha = 0.8f;
         canvasGroup.blocksRaycasts = false;
@@ -118,9 +120,9 @@ public class BaseCard : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDrag
     public void OnDrag(PointerEventData eventData)
     {
         if (!isDraggable || isDisabled) return;
-        
+
         RectTransformUtility.ScreenPointToLocalPointInRectangle(
-            transform.parent as RectTransform, eventData.position, 
+            transform.parent as RectTransform, eventData.position,
             eventData.pressEventCamera, out Vector2 localPoint);
         transform.localPosition = localPoint;
     }
@@ -128,7 +130,7 @@ public class BaseCard : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDrag
     public void OnEndDrag(PointerEventData eventData)
     {
         if (!isDraggable || isDisabled) return;
-        
+
         isDragging = false;
         canvasGroup.alpha = 1f;
         canvasGroup.blocksRaycasts = true;
