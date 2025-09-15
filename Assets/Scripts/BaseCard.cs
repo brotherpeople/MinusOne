@@ -28,12 +28,11 @@ public class BaseCard : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDrag
     public System.Action<BaseCard> OnDragStart;
     public System.Action<BaseCard> OnDragEnd;
 
+    // initialize card components and setup click events
     void Awake()
     {
         if (cardImage == null)
-        {
             cardImage = GetComponent<Image>();
-        }
 
         canvasGroup = GetComponent<CanvasGroup>() ?? gameObject.AddComponent<CanvasGroup>();
 
@@ -47,132 +46,72 @@ public class BaseCard : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDrag
         }
     }
 
+    // store original position and parent for reset functionality
     void Start()
     {
         originalPosition = transform.localPosition;
         originalParent = transform.parent;
-        // if (normalSprite != null && cardImage != null)
-        // {
-        //     SetNormalState();
-        // }
-        // else
-        // {
-        //     Debug.Log($"Card {cardNumber}: Waiting for sprite assignment");
-        // }
-        // Debug.Log($"Card {cardNumber}: Start() called - waiting for explicit state setting");
-
     }
 
+    // set card number
     public void SetCardNumber(int number) => cardNumber = number;
+
+    // get card number
     public int GetCardNumber() => cardNumber;
+
+    // check if card is disabled
     public bool IsDisabled() => isDisabled;
+
+    // check if card is being dragged
     public bool IsDragging() => isDragging;
 
+    // enable/disable drag functionality
     public void SetDraggable(bool draggable) => isDraggable = draggable;
 
+    // set card state as normal/active
     public void SetNormalState()
     {
-        if (cardImage == null)
-        {
-            Debug.LogError($"Card {cardNumber}: cardImage is null in SetNormalState");
-            return;
-        }
-
-        if (canvasGroup == null)
-        {
-            Debug.LogError($"Card {cardNumber}: canvasGroup is null in SetNormalState");
-            return;
-        }
+        if (cardImage == null || canvasGroup == null) return;
 
         isDisabled = false;
-        Debug.Log($"Card {cardNumber}: isDisabled set to false");
-
 
         if (normalSprite != null)
-        {
             cardImage.sprite = normalSprite;
-            Debug.Log($"Card {cardNumber}: Applied normal sprite");
-
-        }
-        else
-        {
-            Debug.LogWarning($"Card {cardNumber}: normalSprite is null");
-        }
 
         canvasGroup.alpha = 1f;
         canvasGroup.blocksRaycasts = true;
 
         var button = GetComponent<Button>();
         if (button != null)
-        {
             button.interactable = true;
-            Debug.Log($"Card {cardNumber}: Button enabled");
-
-        }
-        Debug.Log($"Card {cardNumber}: SetNormalState complete. IsDisabled(): {IsDisabled()}");
-
     }
 
+    // set card state as selected
     public void SetSelectedState()
     {
         if (cardImage != null && selectedSprite != null)
-        {
             cardImage.sprite = selectedSprite;
-        }
-
     }
 
+    // set card state as disabled
     public void SetDisabledState()
     {
-        if (cardImage == null || canvasGroup == null)
-        {
-            Debug.LogError($"Card {cardNumber}: Missing components in SetDisabledState");
-            return;
-        }
+        if (cardImage == null || canvasGroup == null) return;
 
         isDisabled = true;
-        Debug.Log($"Card {cardNumber}: isDisabled set to true");
 
         if (disabledSprite != null)
-        {
             cardImage.sprite = disabledSprite;
-            Debug.Log($"Card {cardNumber}: Applied disabled sprite");
-
-        }
-        else
-        {
-            Debug.LogWarning($"Card {cardNumber}: disabledSprite is null!");
-        }
-
 
         canvasGroup.alpha = 0.6f;
         canvasGroup.blocksRaycasts = false;
 
         var button = GetComponent<Button>();
         if (button != null)
-        {
             button.interactable = false;
-            Debug.Log($"Card {cardNumber}: Button disabled");
-
-        }
-        Debug.Log($"Card {cardNumber}: SetDisabledState complete. IsDisabled(): {IsDisabled()}");
-
-    }
-    public void Initialize()
-    {
-        if (cardImage == null)
-            cardImage = GetComponent<Image>();
-
-        if (canvasGroup == null)
-            canvasGroup = GetComponent<CanvasGroup>() ?? gameObject.AddComponent<CanvasGroup>();
-
-        Debug.Log($"Card {cardNumber}: Initialize called");
-
-        // SetNormalState();
     }
 
-
-    // For ClickableCard behavior (MainScene)
+    // move card to specific zone and set selected state (for card selection scene)
     public void MoveToZone(Transform zone)
     {
         transform.SetParent(zone);
@@ -180,6 +119,7 @@ public class BaseCard : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDrag
         SetSelectedState();
     }
 
+    // return card to original position and reset state
     public void ReturnToOriginalPosition()
     {
         transform.SetParent(originalParent);
@@ -187,11 +127,13 @@ public class BaseCard : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDrag
         SetNormalState();
     }
 
+    // check if card is in original position
     public bool IsInOriginalPosition() => Vector3.Distance(transform.localPosition, originalPosition) < 10f;
 
-    // For DraggableCard behavior (FieldScene)
+    // move card to specific position with animation (for field scene)
     public void MoveToPosition(Vector3 position) => StartCoroutine(AnimateToPosition(position));
 
+    // animate card movement to target position
     private IEnumerator AnimateToPosition(Vector3 targetPosition)
     {
         Vector3 startPos = transform.localPosition;
@@ -210,6 +152,7 @@ public class BaseCard : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDrag
     }
 
     #region Drag and Drop Implementation
+    // start drag operation
     public void OnBeginDrag(PointerEventData eventData)
     {
         if (!isDraggable || isDisabled) return;
@@ -223,6 +166,7 @@ public class BaseCard : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDrag
         OnDragStart?.Invoke(this);
     }
 
+    // handle card dragging
     public void OnDrag(PointerEventData eventData)
     {
         if (!isDraggable || isDisabled) return;
@@ -233,6 +177,7 @@ public class BaseCard : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDrag
         transform.localPosition = localPoint;
     }
 
+    // end drag operation
     public void OnEndDrag(PointerEventData eventData)
     {
         if (!isDraggable || isDisabled) return;

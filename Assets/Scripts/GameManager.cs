@@ -8,12 +8,12 @@ public class GameManager : MonoBehaviour
     public List<Player> activePlayers = new List<Player> { Player.Human, Player.AI_1, Player.AI_2, Player.AI_3 };
     public int currentRound = 1;
     public int maxRounds = 6;
+
     [Header("Survival Tracking")]
     private Player lastWinner = Player.Human;
+
     [Header("Round Data")]
     private Dictionary<Player, int> currentRoundSubmissions = new Dictionary<Player, int>();
-
-    // Unified player data storage
     private Dictionary<Player, PlayerData> playerData = new Dictionary<Player, PlayerData>();
 
     public static GameManager Instance { get; private set; }
@@ -31,9 +31,9 @@ public class GameManager : MonoBehaviour
         public int selectedRightCard = 0;
 
         public List<int> GetPlayableCards() => availableCards.Where(c => !disabledCards.Contains(c)).ToList();
-
     }
 
+    // ensure singleton instance and initialize game
     void Awake()
     {
         if (Instance == null)
@@ -48,6 +48,7 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    // initialize game data and clear saved preferences
     void InitializeGame()
     {
         PlayerPrefs.DeleteKey("CurrentRound");
@@ -60,65 +61,61 @@ public class GameManager : MonoBehaviour
         foreach (Player player in activePlayers)
         {
             playerData[player] = new PlayerData();
-            Debug.Log($"Initialized {player.GetDisplayName()} with cards: {string.Join(", ", playerData[player].availableCards)}");
         }
     }
 
-    // Reset game completely (for new game)
+    // reset entire game to initial state
     public void ResetGame()
     {
-        // Clear all PlayerPrefs
         PlayerPrefs.DeleteAll();
         PlayerPrefs.Save();
 
         currentRound = 1;
         currentRoundSubmissions.Clear();
 
-        // Reset all player data
         foreach (Player player in activePlayers)
         {
             playerData[player] = new PlayerData();
         }
-
-        Debug.Log("Game completely reset");
-    }
-    public bool IsGameOver()
-    {
-        return currentRound > maxRounds && !playerData[Player.Human].isSurvivor;
     }
 
-    public bool IsHumanSurvivor()
-    {
-        return playerData[Player.Human].isSurvivor;
-    }
+    // check if game is over (human failed to survive)
+    public bool IsGameOver() => currentRound > maxRounds && !playerData[Player.Human].isSurvivor;
 
-    public bool IsGameCompleted()
-    {
-        return IsHumanSurvivor() || IsGameOver();
-    }
+    // check if human player survived
+    public bool IsHumanSurvivor() => playerData[Player.Human].isSurvivor;
 
-    public bool ShouldShowSurvivalRound()
-    {
-        return currentRound == 3 || currentRound == 6;
-    }
+    // check if game is completed (win or lose)
+    public bool IsGameCompleted() => IsHumanSurvivor() || IsGameOver();
 
-    // Unified player access methods
+    // check if current round is a survival round
+    public bool ShouldShowSurvivalRound() => currentRound == 3 || currentRound == 6;
+
+    // get list of players who are still active (not eliminated or survived)
     public List<Player> GetActivePlayers()
     {
         return activePlayers.Where(p => !playerData[p].isEliminated && !playerData[p].isSurvivor).ToList();
     }
+
+    // get player data for specific player
     public PlayerData GetPlayerData(Player player) => playerData.ContainsKey(player) ? playerData[player] : null;
+
+    // eliminate player from game
     public void EliminatePlayer(Player player) => playerData[player].isEliminated = true;
+
+    // set last round winner
     public void SetLastWinner(Player winner) => lastWinner = winner;
+
+    // get last round winner
     public Player GetLastWinner() => lastWinner;
 
-
+    // add points to player
     public void AddPoint(Player player, int points)
     {
         playerData[player].points += points;
-        Debug.Log($"{player.GetDisplayName()}: +{points} points (Total: {playerData[player].points})");
     }
 
+    // generate random card selections for AI players
     public void GenerateAISelections()
     {
         foreach (Player player in GetActivePlayers().Where(p => p.IsAI()))
@@ -126,11 +123,8 @@ public class GameManager : MonoBehaviour
             var data = playerData[player];
             var playable = data.GetPlayableCards();
 
-            // Debug.Log($"AI {player.GetDisplayName()} playable cards: {string.Join(", ", playable)}");
-
             if (playable.Count >= 2)
             {
-                // Use HashSet to avoid duplicates
                 var selected = new HashSet<int>();
                 while (selected.Count < 2)
                 {
@@ -141,65 +135,58 @@ public class GameManager : MonoBehaviour
                 var selectedArray = selected.ToArray();
                 data.selectedLeftCard = selectedArray[0];
                 data.selectedRightCard = selectedArray[1];
-
-                Debug.Log($"AI {player.GetDisplayName()} selected: Left={data.selectedLeftCard}, Right={data.selectedRightCard}");
             }
         }
     }
 
+    // process player's card submission (remove used card, add temp card to disabled)
     public void ProcessSubmission(Player player, int submittedCard, int tempCard)
     {
         var data = playerData[player];
 
-        // Debug.Log($"=== {player.GetDisplayName()} Submission Processing ===");
-        // Debug.Log($"Before - Available: [{string.Join(",", data.availableCards)}]");
-        // Debug.Log($"Before - Disabled: [{string.Join(",", data.disabledCards)}]");
-        // Debug.Log($"Submitted: {submittedCard}, Temp: {tempCard}");
-
-        bool removed = data.availableCards.Remove(submittedCard);
-        Debug.Log($"Removed {submittedCard} from available: {removed}");
-
+        data.availableCards.Remove(submittedCard);
         data.disabledCards.Clear();
-        Debug.Log("Cleared previous disabled cards");
 
         if (tempCard > 0)
         {
             data.disabledCards.Add(tempCard);
-            Debug.Log($"Added {tempCard} to disabled (next round only)");
         }
-
-        Debug.Log($"After - Available: [{string.Join(",", data.availableCards)}]");
-        Debug.Log($"After - Disabled: [{string.Join(",", data.disabledCards)}]");
-        Debug.Log($"=== End {player.GetDisplayName()} Processing ===");
     }
+
+    // clear disabled cards for all players (used between rounds)
     public void ClearDisabledCards()
     {
         foreach (var kvp in playerData)
         {
-            Debug.Log($"Clearing disabled cards for {kvp.Key.GetDisplayName()}: [{string.Join(",", kvp.Value.disabledCards)}]");
             kvp.Value.disabledCards.Clear();
         }
-        Debug.Log("All disabled cards cleared for next round");
     }
+
+    // set player's submitted card for current round
     public void SetPlayerSubmission(Player player, int cardNumber)
     {
         currentRoundSubmissions[player] = cardNumber;
-        Debug.Log($"{player.GetDisplayName()} submitted card: {cardNumber}");
     }
+
+    // get all current round submissions
     public Dictionary<Player, int> GetCurrentSubmissions()
     {
         return new Dictionary<Player, int>(currentRoundSubmissions);
     }
+
+    // clear all round submissions
     public void ClearSubmissions()
     {
         currentRoundSubmissions.Clear();
     }
 
+    // mark player as survivor
     public void SetPlayerAsSurvivor(Player player)
     {
         playerData[player].isSurvivor = true;
     }
 
+    // reset points for all non-survivor players
     public void ResetNonSurvivorPoints()
     {
         foreach (var player in GetActivePlayers())
@@ -208,6 +195,7 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    // reset all players' cards to initial state (1-8)
     public void ResetAllCards()
     {
         foreach (var player in GetActivePlayers())
@@ -217,6 +205,4 @@ public class GameManager : MonoBehaviour
             data.disabledCards.Clear();
         }
     }
-
-
 }

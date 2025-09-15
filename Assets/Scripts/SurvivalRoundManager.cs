@@ -1,5 +1,3 @@
-// SurvivalRoundManager.cs - 최대한 간단하게
-using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -23,14 +21,15 @@ public class SurvivalRoundManager : MonoBehaviour
     [Header("Animation Settings")]
     public float animationSpeed = 1f;
     public float textSpeed = 0.05f;
+
     [Header("Game Result UI")]
     public GameObject gameResultPanel;
     public TextMeshProUGUI gameResultText;
     public Button newGameButton;
 
-
     private readonly int[] SURVIVAL_ROUNDS = { 3, 6 };
 
+    // show survival calculation panel and start the process
     public void ShowSurvivalCalculation()
     {
         survivalPanel.SetActive(true);
@@ -38,6 +37,7 @@ public class SurvivalRoundManager : MonoBehaviour
         StartCoroutine(ProcessSurvival());
     }
 
+    // process survival calculation with animations
     private IEnumerator ProcessSurvival()
     {
         CreatePlayerStats();
@@ -65,6 +65,7 @@ public class SurvivalRoundManager : MonoBehaviour
         }
     }
 
+    // show final game result (win/lose)
     private void ShowGameResult(bool humanWon)
     {
         if (gameResultPanel != null)
@@ -94,6 +95,7 @@ public class SurvivalRoundManager : MonoBehaviour
         }
     }
 
+    // start new game by resetting everything
     public void StartNewGame()
     {
         if (GameManager.Instance != null)
@@ -104,6 +106,7 @@ public class SurvivalRoundManager : MonoBehaviour
         SceneManager.LoadScene("CardSelectionScene");
     }
 
+    // create player stat UI elements
     private void CreatePlayerStats()
     {
         for (int i = statsParent.childCount - 1; i >= 0; i--)
@@ -122,6 +125,7 @@ public class SurvivalRoundManager : MonoBehaviour
         }
     }
 
+    // animate victory token conversion to points
     private IEnumerator AnimateTokenConversion()
     {
         var players = GameManager.Instance.GetActivePlayers();
@@ -160,6 +164,7 @@ public class SurvivalRoundManager : MonoBehaviour
         }
     }
 
+    // determine survivor based on points, tokens, and last winner
     private Player DetermineSurvivor()
     {
         var players = GameManager.Instance.GetActivePlayers();
@@ -180,6 +185,7 @@ public class SurvivalRoundManager : MonoBehaviour
         return topTokens[0].Player;
     }
 
+    // highlight survivor with green background
     private void HighlightSurvivor(Player survivor)
     {
         var players = GameManager.Instance.GetActivePlayers();
@@ -195,6 +201,7 @@ public class SurvivalRoundManager : MonoBehaviour
         }
     }
 
+    // show survivor announcement with typewriter effect
     private IEnumerator ShowSurvivorText(Player survivor)
     {
         string message;
@@ -216,6 +223,7 @@ public class SurvivalRoundManager : MonoBehaviour
         }
     }
 
+    // continue to next round after survival calculation
     public void OnContinueClicked()
     {
         Player survivor = DetermineSurvivor();
@@ -228,13 +236,11 @@ public class SurvivalRoundManager : MonoBehaviour
         {
             GameManager.Instance.ResetAllCards();
         }
-        // GameManager.Instance.ClearDisabledCards();
 
         GameManager.Instance?.ClearSubmissions();
         if (GameManager.Instance != null)
         {
             GameManager.Instance.currentRound++;
-            Debug.Log($"Survival round advanced to: {GameManager.Instance.currentRound}");
         }
 
         survivalPanel.SetActive(false);
@@ -247,4 +253,3 @@ public class SurvivalRoundManager : MonoBehaviour
         SceneManager.LoadScene("CardSelectionScene");
     }
 }
-

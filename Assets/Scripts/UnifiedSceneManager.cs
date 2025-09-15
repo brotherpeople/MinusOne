@@ -12,7 +12,7 @@ public class UnifiedSceneManager : MonoBehaviour
     public SceneType currentScene = SceneType.CardSelection;
 
     [Header("Common UI")]
-    public GameObject cardPrefab; // Single prefab for all scenes
+    public GameObject cardPrefab;
     public GameObject fieldCardPrefab;
     public Transform cardParent;
     public Sprite[] normalSprites = new Sprite[8];
@@ -41,6 +41,7 @@ public class UnifiedSceneManager : MonoBehaviour
     public GameObject shouldBeFadedOutText;
     public GameObject fieldPanel;
     public GameObject nextRoundButton;
+
     [Header("Winner Reason UI")]
     public GameObject winnerReasonPrefab;
     public Transform uiParent;
@@ -57,13 +58,12 @@ public class UnifiedSceneManager : MonoBehaviour
     private BaseCard leftZoneCard = null;
     private BaseCard rightZoneCard = null;
     private BaseCard selectedCard = null;
-    private Dictionary<Player, int> finalSubmissions = new Dictionary<Player, int>();
 
+    // initialize scene based on current scene type
     void Start()
     {
         if (GameManager.Instance != null && GameManager.Instance.IsGameCompleted())
         {
-            Debug.Log("Game already completed, not starting scene");
             return;
         }
 
@@ -75,7 +75,8 @@ public class UnifiedSceneManager : MonoBehaviour
         }
     }
 
-    #region Card Selection Scene (isDraggable = false)
+    #region Card Selection Scene
+    // initialize card selection scene
     void StartCardSelection()
     {
         StartCoroutine(ShowRoundNumber());
@@ -84,6 +85,7 @@ public class UnifiedSceneManager : MonoBehaviour
         GameManager.Instance?.GenerateAISelections();
     }
 
+    // show round number with fade animation
     IEnumerator ShowRoundNumber()
     {
         if (roundDisplayPanel && roundNumberText)
@@ -103,6 +105,8 @@ public class UnifiedSceneManager : MonoBehaviour
             roundDisplayPanel.SetActive(false);
         }
     }
+
+    // fade out UI element
     IEnumerator FadeOut(CanvasGroup canvasGroup, float duration)
     {
         float elapsed = 0f;
@@ -115,21 +119,15 @@ public class UnifiedSceneManager : MonoBehaviour
         canvasGroup.alpha = 0f;
     }
 
+    // handle card click in selection scene
     void OnCardClicked_Selection(BaseCard card)
     {
-        Debug.Log($"Card {card.GetCardNumber()} clicked. IsDisabled: {card.IsDisabled()}");
-
-        if (card.IsDisabled())
-        {
-            Debug.Log($"Card {card.GetCardNumber()} is disabled - click ignored");
-            return;
-        }
+        if (card.IsDisabled()) return;
 
         if (leftZoneCard == null)
         {
             leftZoneCard = card;
             card.MoveToZone(leftZone);
-            Debug.Log($"Card {card.GetCardNumber()} moved to left zone");
         }
         else if (rightZoneCard == null && card != leftZoneCard)
         {
@@ -150,6 +148,7 @@ public class UnifiedSceneManager : MonoBehaviour
         if (confirmButton) confirmButton.interactable = (leftZoneCard != null && rightZoneCard != null);
     }
 
+    // confirm card selection and proceed to field scene
     void OnConfirmClicked()
     {
         int leftCard = leftZoneCard.GetCardNumber();
@@ -164,24 +163,23 @@ public class UnifiedSceneManager : MonoBehaviour
         {
             humanData.selectedLeftCard = leftCard;
             humanData.selectedRightCard = rightCard;
-            Debug.Log($"Human selected: Left={leftCard}, Right={rightCard}");
         }
 
         currentScene = SceneType.Field;
         ClearScene();
         SceneManager.LoadScene("FieldScene");
-        // StartFieldScene();
     }
     #endregion
 
-    #region Field Scene (isDraggable = true)
+    #region Field Scene
+    // initialize field scene
     void StartFieldScene()
     {
         CreateFieldCards();
         SetupAIPanels();
-        // SetupSubmitArea();
     }
 
+    // create draggable cards for field scene
     void CreateFieldCards()
     {
         int leftCard = PlayerPrefs.GetInt("LeftCard", 1);
@@ -190,7 +188,6 @@ public class UnifiedSceneManager : MonoBehaviour
         CreateCard(leftCard, new Vector3(-180, 130, 0), isDraggable: true, useCardPrefab: true);
         CreateCard(rightCard, new Vector3(180, 130, 0), isDraggable: true, useCardPrefab: true);
 
-        // Set up field-specific events
         foreach (var card in allCards)
         {
             card.SetNormalState();
@@ -200,19 +197,18 @@ public class UnifiedSceneManager : MonoBehaviour
         }
     }
 
+    // handle card click in field scene
     void OnCardClicked_Field(BaseCard card)
     {
         if (card.IsDisabled()) return;
 
         if (selectedCard == card)
         {
-            // Deselect current card
             selectedCard = null;
             card.SetNormalState();
             var otherCard = allCards.FirstOrDefault(c => c != card);
             otherCard?.SetNormalState();
 
-            // Destroy disabled text
             if (disabledText != null)
             {
                 Destroy(disabledText);
@@ -221,17 +217,14 @@ public class UnifiedSceneManager : MonoBehaviour
         }
         else
         {
-            // Select new card
             selectedCard = card;
             card.SetSelectedState();
 
-            // Disable the other card
             var otherCard = allCards.FirstOrDefault(c => c != card);
             if (otherCard != null)
             {
                 otherCard.SetDisabledState();
 
-                // Create disabled text
                 if (disabledTextPrefab != null)
                 {
                     disabledText = Instantiate(disabledTextPrefab, cardParent);
@@ -242,19 +235,19 @@ public class UnifiedSceneManager : MonoBehaviour
             }
         }
     }
+
+    // handle drag start
     void OnDragStart(BaseCard card)
     {
         selectedCard = card;
         dragOriginalPos = card.transform.localPosition;
         if (submitAreaImage) submitAreaImage.color = highlightAreaColor;
 
-        // Disable the other card
         var otherCard = allCards.FirstOrDefault(c => c != card);
         if (otherCard != null)
         {
             otherCard.SetDisabledState();
 
-            // Create disabled text
             if (disabledTextPrefab != null)
             {
                 disabledText = Instantiate(disabledTextPrefab, cardParent);
@@ -265,10 +258,9 @@ public class UnifiedSceneManager : MonoBehaviour
         }
     }
 
+    // handle drag end
     void OnDragEnd(BaseCard card)
     {
-        Vector2 originalPos = card.GetComponent<RectTransform>().localPosition;
-
         if (submitAreaImage)
         {
             Color subColor = submitAreaImage.color;
@@ -292,10 +284,10 @@ public class UnifiedSceneManager : MonoBehaviour
                 Destroy(disabledText);
                 disabledText = null;
             }
-
         }
     }
 
+    // check if card is in submit area
     bool IsCardInSubmitArea(BaseCard card)
     {
         if (!submitArea) return false;
@@ -303,15 +295,12 @@ public class UnifiedSceneManager : MonoBehaviour
         return RectTransformUtility.RectangleContainsScreenPoint(submitArea, cardRect.position);
     }
 
+    // process human card submission
     void ProcessSubmission(BaseCard card)
     {
         int submitted = card.GetCardNumber();
         var otherCard = allCards.FirstOrDefault(c => c != card);
         int temp = otherCard?.GetCardNumber() ?? 0;
-
-        Debug.Log($"=== Human Submission ===");
-        Debug.Log($"Submitted card: {submitted}");
-        Debug.Log($"Temp storage card: {temp}");
 
         GameManager.Instance?.ProcessSubmission(Player.Human, submitted, temp);
         GameManager.Instance?.SetPlayerSubmission(Player.Human, submitted);
@@ -319,9 +308,10 @@ public class UnifiedSceneManager : MonoBehaviour
         card.MoveToPosition(new Vector3(0, 600, 0));
 
         ProcessAISubmissions();
-
         SceneManager.LoadScene("ResultScene");
     }
+
+    // process AI card submissions
     void ProcessAISubmissions()
     {
         var activeAI = GameManager.Instance?.GetActivePlayers().Where(p => p.IsAI()) ?? new List<Player>();
@@ -335,14 +325,13 @@ public class UnifiedSceneManager : MonoBehaviour
                 int submitted = chooseLeft ? data.selectedLeftCard : data.selectedRightCard;
                 int temp = chooseLeft ? data.selectedRightCard : data.selectedLeftCard;
 
-                Debug.Log($"AI {player.GetDisplayName()} submission: submitted={submitted}, temp={temp}");
-
                 GameManager.Instance?.ProcessSubmission(player, submitted, temp);
                 GameManager.Instance?.SetPlayerSubmission(player, submitted);
             }
         }
     }
 
+    // setup AI player panels
     void SetupAIPanels()
     {
         var activePlayers = GameManager.Instance?.GetActivePlayers().Where(p => p.IsAI()).ToList()
@@ -361,14 +350,10 @@ public class UnifiedSceneManager : MonoBehaviour
             }
         }
     }
-
-    void SetupSubmitArea()
-    {
-        if (submitAreaImage) submitAreaImage.color = normalAreaColor;
-    }
     #endregion
 
-    #region Result Scene (isDraggable = false)
+    #region Result Scene
+    // initialize result scene
     void StartResultScene()
     {
         nextRoundButton.SetActive(false);
@@ -384,8 +369,9 @@ public class UnifiedSceneManager : MonoBehaviour
 
         var buttonText = nextRoundButton.GetComponentInChildren<TextMeshProUGUI>();
         if (buttonText) buttonText.text = isSurvival ? "DETERMINE SURVIVOR" : "NEXT ROUND";
-
     }
+
+    // move cards up with animation
     IEnumerator MoveCardsUp(Transform transform)
     {
         RectTransform cardParentRect = transform.GetComponent<RectTransform>();
@@ -406,6 +392,8 @@ public class UnifiedSceneManager : MonoBehaviour
 
         cardParentRect.localPosition = endPos;
     }
+
+    // fade out game object
     IEnumerator FadeOutObject(GameObject gameObject)
     {
         CanvasGroup canvasGroup = gameObject.GetComponent<CanvasGroup>();
@@ -428,18 +416,14 @@ public class UnifiedSceneManager : MonoBehaviour
         canvasGroup.alpha = 0f;
         gameObject.SetActive(false);
     }
+
+    // create result cards showing submitted cards
     void CreateResultCards()
     {
         var submissions = GameManager.Instance?.GetCurrentSubmissions();
-        if (submissions == null || submissions.Count == 0)
-        {
-            Debug.LogError("No submission data found!");
-            return;
-        }
+        if (submissions == null || submissions.Count == 0) return;
 
         var activePlayers = GameManager.Instance?.GetActivePlayers() ?? new List<Player> { Player.Human };
-
-        Debug.Log($"Creating result cards for {activePlayers.Count} players");
 
         for (int i = 0; i < activePlayers.Count; i++)
         {
@@ -447,11 +431,11 @@ public class UnifiedSceneManager : MonoBehaviour
             if (submissions.ContainsKey(player))
             {
                 CreateResultCard(player, submissions[player], i);
-                Debug.Log($"Created result card for {player.GetDisplayName()}: {submissions[player]}");
             }
         }
     }
 
+    // create individual result card
     void CreateResultCard(Player player, int cardNumber, int position)
     {
         var cardObj = Instantiate(fieldCardPrefab, resultCardParent);
@@ -464,7 +448,6 @@ public class UnifiedSceneManager : MonoBehaviour
         card.SetCardNumber(cardNumber);
         card.SetDraggable(false);
         card.SetNormalState();
-        // card.GetComponent<Button>().interactable = false;
 
         var button = card.GetComponent<Button>();
         button.onClick.RemoveAllListeners();
@@ -483,8 +466,6 @@ public class UnifiedSceneManager : MonoBehaviour
             {
                 textComponent.text = player.GetShortName();
             }
-
-            // Debug.Log($"Created text for {player.GetDisplayName()} at position {textRect.localPosition}");
         }
 
         if (textBoxPrefab != null)
@@ -494,16 +475,14 @@ public class UnifiedSceneManager : MonoBehaviour
             boxRect.localPosition = new Vector3(cardPos.x, cardPos.y + 100f, 0f);
         }
 
-        // Debug.Log($"Card {cardNumber} sprite set: {card.normalSprite?.name ?? "NULL"}");
-
         var nameText = cardObj.GetComponentInChildren<TextMeshProUGUI>();
         if (nameText != null)
         {
             nameText.text = player.GetShortName();
         }
-
     }
 
+    // update AI panels with submission results
     void UpdateAIPanels()
     {
         var submissions = GameManager.Instance?.GetCurrentSubmissions();
@@ -514,10 +493,8 @@ public class UnifiedSceneManager : MonoBehaviour
             var player = activeAI[i];
             var data = GameManager.Instance?.GetPlayerData(player);
 
-
             if (data != null)
             {
-
                 if (submissions != null && submissions.ContainsKey(player))
                 {
                     int submitted = submissions[player];
@@ -536,6 +513,7 @@ public class UnifiedSceneManager : MonoBehaviour
         }
     }
 
+    // determine round winner and assign points
     void DetermineWinner()
     {
         var submissions = GameManager.Instance?.GetCurrentSubmissions();
@@ -569,6 +547,7 @@ public class UnifiedSceneManager : MonoBehaviour
         RefreshAIPanelScore();
     }
 
+    // refresh AI panel scores after winner determination
     void RefreshAIPanelScore()
     {
         var activeAI = GameManager.Instance?.GetActivePlayers().Where(p => p.IsAI()).ToList();
@@ -589,6 +568,7 @@ public class UnifiedSceneManager : MonoBehaviour
         }
     }
 
+    // show winner announcement text
     void ShowWinnerText(Player winner, int winningCard, Dictionary<Player, int> submissions)
     {
         List<string> messages = new List<string>();
@@ -600,7 +580,7 @@ public class UnifiedSceneManager : MonoBehaviour
         StartCoroutine(TypewriterEffect(messages));
     }
 
-
+    // show no winner announcement text
     void ShowNoWinnerText(Dictionary<Player, int> submissions)
     {
         List<string> messages = new List<string>();
@@ -612,7 +592,7 @@ public class UnifiedSceneManager : MonoBehaviour
         StartCoroutine(TypewriterEffect(messages));
     }
 
-
+    // animate text with typewriter effect
     IEnumerator TypewriterEffect(List<string> messages)
     {
         if (reasonText == null) yield break;
@@ -637,8 +617,9 @@ public class UnifiedSceneManager : MonoBehaviour
 
         yield return new WaitForSeconds(1f);
         nextRoundButton.SetActive(true);
-
     }
+
+    // proceed to next round or survival calculation
     public void ProceedToNextRound()
     {
         if (currentReasonUI != null)
@@ -646,7 +627,6 @@ public class UnifiedSceneManager : MonoBehaviour
             Destroy(currentReasonUI);
         }
         GameManager.Instance?.ClearSubmissions();
-        // GameManager.Instance?.ClearDisabledCards();
 
         if (GameManager.Instance != null)
         {
@@ -655,25 +635,23 @@ public class UnifiedSceneManager : MonoBehaviour
 
             if (isSurvival)
             {
-                Debug.Log($"Showing survival calculation for round {round}");
                 FindObjectOfType<SurvivalRoundManager>()?.ShowSurvivalCalculation();
                 return;
             }
             if (round >= GameManager.Instance.maxRounds)
             {
-                Debug.Log("Max rounds reached - game should end");
                 return;
             }
 
             GameManager.Instance.ClearSubmissions();
             GameManager.Instance.currentRound++;
-            Debug.Log($"Normal round advanced to: {GameManager.Instance.currentRound}");
         }
 
         nextRoundButton.SetActive(false);
         SceneManager.LoadScene("CardSelectionScene");
     }
 
+    // create winner reason UI
     void CreateWinnerReasonUI()
     {
         if (winnerReasonPrefab != null && uiParent != null)
@@ -690,27 +668,16 @@ public class UnifiedSceneManager : MonoBehaviour
     #endregion
 
     #region Common Methods
+    // create cards for the scene (available and disabled)
     void CreateCards(bool isDraggable)
     {
-        if (GameManager.Instance == null)
-        {
-            Debug.LogError("GameManager.Instance is null!");
-            return;
-        }
+        if (GameManager.Instance == null) return;
 
         var playerData = GameManager.Instance.GetPlayerData(Player.Human);
-        if (playerData == null)
-        {
-            Debug.LogError("Human player data is null!");
-            return;
-        }
+        if (playerData == null) return;
 
         var availableCards = playerData.availableCards;
         var disabledCards = playerData.disabledCards;
-
-        Debug.Log($"=== Round {GameManager.Instance.currentRound} Card Creation ===");
-        Debug.Log($"Available cards: {string.Join(", ", availableCards)}");
-        Debug.Log($"Disabled cards: {string.Join(", ", disabledCards)}");
 
         allCards.Clear();
 
@@ -723,8 +690,6 @@ public class UnifiedSceneManager : MonoBehaviour
         var sortedCards = new List<int>(allCardsToShow);
         sortedCards.Sort();
 
-        Debug.Log($"Cards to show: {string.Join(", ", sortedCards)}");
-
         for (int i = 0; i < sortedCards.Count; i++)
         {
             int cardNumber = sortedCards[i];
@@ -736,25 +701,17 @@ public class UnifiedSceneManager : MonoBehaviour
             {
                 var currentCard = allCards[allCards.Count - 1];
 
-                Debug.Log($"Setting state for card {cardNumber}. Is in disabled list: {disabledCards.Contains(cardNumber)}");
-
-
                 if (disabledCards.Contains(cardNumber))
                 {
                     currentCard.SetDisabledState();
-                    Debug.Log($"Card {cardNumber} is disabled (temp storage)");
                 }
                 else
                 {
                     currentCard.SetNormalState();
-                    Debug.Log($"Card {cardNumber} is active");
                 }
-                Debug.Log($"Card {cardNumber} final state - IsDisabled(): {currentCard.IsDisabled()}");
-
             }
         }
 
-        // Set up card selection events
         if (!isDraggable)
         {
             foreach (var card in allCards)
@@ -762,10 +719,9 @@ public class UnifiedSceneManager : MonoBehaviour
                 card.OnCardClicked += OnCardClicked_Selection;
             }
         }
-
-        Debug.Log($"=== Card Creation Complete: {allCards.Count} cards created ===");
     }
 
+    // get card position by index
     Vector3 GetCardPositionByIndex(int index)
     {
         if (index < 4)
@@ -778,6 +734,7 @@ public class UnifiedSceneManager : MonoBehaviour
         }
     }
 
+    // create individual card
     void CreateCard(int cardNumber, Vector3 position, bool isDraggable, bool useCardPrefab = true)
     {
         GameObject prefabToUse = useCardPrefab ? cardPrefab : fieldCardPrefab;
@@ -808,19 +765,10 @@ public class UnifiedSceneManager : MonoBehaviour
             rectTransform.localPosition = position;
         }
 
-        // card.Initialize();
-
         allCards.Add(card);
-
-        Debug.Log($"Card {cardNumber} created at position {position}");
     }
 
-    Vector3 GetCardPosition(int index)
-    {
-        return index < 4 ?
-            new Vector3(-375f + index * 250f, 50f, 0) :
-            new Vector3(-375f + (index - 4) * 250f, -300f, 0);
-    }
+    // clear all scene objects
     void ClearScene()
     {
         foreach (var card in allCards)
@@ -837,6 +785,5 @@ public class UnifiedSceneManager : MonoBehaviour
             }
         }
     }
-
     #endregion
 }

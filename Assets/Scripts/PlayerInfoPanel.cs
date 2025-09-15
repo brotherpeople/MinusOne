@@ -11,6 +11,7 @@ public class PlayerInfoPanel : MonoBehaviour
     public Image leftCardImage;
     public Image rightCardImage;
 
+    // setup panel with player information and card sprites
     public void Setup(string playerName, int tokens, int points, Sprite leftSprite, Sprite rightSprite)
     {
         if (playerNameText) playerNameText.text = playerName;
