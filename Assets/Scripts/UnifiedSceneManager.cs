@@ -37,6 +37,7 @@ public class UnifiedSceneManager : MonoBehaviour
     public Transform resultCardParent;
     public PlayerInfoPanel[] aiPanels = new PlayerInfoPanel[3];
     public GameObject playerTextPrefab;
+    public GameObject textBoxPrefab;
     public GameObject shouldBeFadedOutText;
     public GameObject fieldPanel;
     public GameObject nextRoundButton;
@@ -60,6 +61,12 @@ public class UnifiedSceneManager : MonoBehaviour
 
     void Start()
     {
+        if (GameManager.Instance != null && GameManager.Instance.IsGameCompleted())
+        {
+            Debug.Log("Game already completed, not starting scene");
+            return;
+        }
+
         switch (currentScene)
         {
             case SceneType.CardSelection: StartCardSelection(); break;
@@ -88,7 +95,7 @@ public class UnifiedSceneManager : MonoBehaviour
             canvasGroup.alpha = 1f;
 
             int round = GameManager.Instance?.currentRound ?? 1;
-            bool isSettlement = new int[] { 3, 6, 9, 12, 18 }.Contains(round);
+            bool isSettlement = GameManager.Instance?.ShouldShowSurvivalRound() ?? false;
             roundNumberText.text = isSettlement ? $"ROUND {round}\n* SURVIVAL ROUND *" : $"ROUND {round}";
 
             yield return new WaitForSeconds(2f);
@@ -371,6 +378,13 @@ public class UnifiedSceneManager : MonoBehaviour
         StartCoroutine(FadeOutObject(shouldBeFadedOutText));
         StartCoroutine(FadeOutObject(fieldPanel));
         StartCoroutine(MoveCardsUp(resultCardParent));
+
+        int round = GameManager.Instance?.currentRound ?? 1;
+        bool isSurvival = GameManager.Instance?.ShouldShowSurvivalRound() ?? false;
+
+        var buttonText = nextRoundButton.GetComponentInChildren<TextMeshProUGUI>();
+        if (buttonText) buttonText.text = isSurvival ? "DETERMINE SURVIVOR" : "NEXT ROUND";
+
     }
     IEnumerator MoveCardsUp(Transform transform)
     {
@@ -463,7 +477,7 @@ public class UnifiedSceneManager : MonoBehaviour
         {
             var textObj = Instantiate(playerTextPrefab, resultCardParent);
             var textRect = textObj.GetComponent<RectTransform>();
-            textRect.localPosition = new Vector3(cardPos.x, cardPos.y - 100f, 0f);
+            textRect.localPosition = new Vector3(cardPos.x, cardPos.y + 100f, 0f);
             var textComponent = textObj.GetComponent<TextMeshProUGUI>();
             if (textComponent != null)
             {
@@ -471,6 +485,13 @@ public class UnifiedSceneManager : MonoBehaviour
             }
 
             // Debug.Log($"Created text for {player.GetDisplayName()} at position {textRect.localPosition}");
+        }
+
+        if (textBoxPrefab != null)
+        {
+            var boxObj = Instantiate(textBoxPrefab, resultCardParent);
+            var boxRect = boxObj.GetComponent<RectTransform>();
+            boxRect.localPosition = new Vector3(cardPos.x, cardPos.y + 100f, 0f);
         }
 
         // Debug.Log($"Card {cardNumber} sprite set: {card.normalSprite?.name ?? "NULL"}");
@@ -536,6 +557,7 @@ public class UnifiedSceneManager : MonoBehaviour
             GameManager.Instance?.AddPoint(winner.Key, winningCard);
             var winnerData = GameManager.Instance?.GetPlayerData(winner.Key);
             if (winnerData != null) winnerData.victoryTokens += 1;
+            GameManager.Instance?.SetLastWinner(winner.Key);
 
             ShowWinnerText(winner.Key, winningCard, submissions);
         }
@@ -623,14 +645,29 @@ public class UnifiedSceneManager : MonoBehaviour
         {
             Destroy(currentReasonUI);
         }
-
         GameManager.Instance?.ClearSubmissions();
         // GameManager.Instance?.ClearDisabledCards();
 
         if (GameManager.Instance != null)
         {
+            int round = GameManager.Instance.currentRound;
+            bool isSurvival = new int[] { 3, 6, 9, 12, 18 }.Contains(round);
+
+            if (isSurvival)
+            {
+                Debug.Log($"Showing survival calculation for round {round}");
+                FindObjectOfType<SurvivalRoundManager>()?.ShowSurvivalCalculation();
+                return;
+            }
+            if (round >= GameManager.Instance.maxRounds)
+            {
+                Debug.Log("Max rounds reached - game should end");
+                return;
+            }
+
+            GameManager.Instance.ClearSubmissions();
             GameManager.Instance.currentRound++;
-            Debug.Log($"Round advanced to: {GameManager.Instance.currentRound}");
+            Debug.Log($"Normal round advanced to: {GameManager.Instance.currentRound}");
         }
 
         nextRoundButton.SetActive(false);
