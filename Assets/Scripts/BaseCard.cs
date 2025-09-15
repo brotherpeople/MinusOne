@@ -34,9 +34,9 @@ public class BaseCard : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDrag
         {
             cardImage = GetComponent<Image>();
         }
-        
+
         canvasGroup = GetComponent<CanvasGroup>() ?? gameObject.AddComponent<CanvasGroup>();
-        
+
         var button = GetComponent<Button>();
         if (button != null)
         {
@@ -59,7 +59,7 @@ public class BaseCard : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDrag
         // {
         //     Debug.Log($"Card {cardNumber}: Waiting for sprite assignment");
         // }
-        Debug.Log($"Card {cardNumber}: Start() called - waiting for explicit state setting");
+        // Debug.Log($"Card {cardNumber}: Start() called - waiting for explicit state setting");
 
     }
 
@@ -162,12 +162,12 @@ public class BaseCard : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDrag
     {
         if (cardImage == null)
             cardImage = GetComponent<Image>();
-            
+
         if (canvasGroup == null)
             canvasGroup = GetComponent<CanvasGroup>() ?? gameObject.AddComponent<CanvasGroup>();
 
         Debug.Log($"Card {cardNumber}: Initialize called");
-            
+
         // SetNormalState();
     }
 
