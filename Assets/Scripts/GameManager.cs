@@ -1,52 +1,39 @@
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 public class GameManager : MonoBehaviour
 {
     [Header("Game Settings")]
-    [Range(1, 3)]
-    public int aiPlayerCount = 3;
-
-    [Header("Round Settings")]
+    public List<Player> activePlayers = new List<Player> { Player.Human, Player.AI_1, Player.AI_2, Player.AI_3 };
     public int currentRound = 1;
-    public int maxRounds = 18;
+    public int maxRounds = 6;
 
-    [Header("Player Status")]
-    public int[] playerScores;
-    public int[] victoryTokens;
+    [Header("Survival Tracking")]
+    private Player lastWinner = Player.Human;
 
-    // AI Player card management
+    [Header("Round Data")]
+    private Dictionary<Player, int> currentRoundSubmissions = new Dictionary<Player, int>();
+    private Dictionary<Player, PlayerData> playerData = new Dictionary<Player, PlayerData>();
+
+    public static GameManager Instance { get; private set; }
+
     [System.Serializable]
-    public class PlayerCardData
+    public class PlayerData
     {
-        public List<int> availableCards = new List<int>();
+        public int points = 0;
+        public int victoryTokens = 0;
+        public bool isEliminated = false;
+        public bool isSurvivor = false;
+        public List<int> availableCards = new List<int> { 1, 2, 3, 4, 5, 6, 7, 8 };
         public List<int> disabledCards = new List<int>();
         public int selectedLeftCard = 0;
         public int selectedRightCard = 0;
 
-        public PlayerCardData()
-        {
-            // Initialize with cards 1-8
-            for (int i = 1; i <= 8; i++)
-            {
-                availableCards.Add(i);
-            }
-        }
+        public List<int> GetPlayableCards() => availableCards.Where(c => !disabledCards.Contains(c)).ToList();
     }
 
-    public PlayerCardData[] allPlayersCardData;
-
-    public static GameManager Instance { get; private set; }
-
-    public enum GamePhase
-    {
-        CardSelection,
-        FieldPhase,
-        ResultPhase
-    }
-
-    public GamePhase currentPhase = GamePhase.CardSelection;
-
+    // ensure singleton instance and initialize game
     void Awake()
     {
         if (Instance == null)
@@ -61,154 +48,161 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    // initialize game data and clear saved preferences
     void InitializeGame()
     {
-        int totalPlayers = aiPlayerCount + 1;
+        PlayerPrefs.DeleteKey("CurrentRound");
+        PlayerPrefs.DeleteKey("LeftCard");
+        PlayerPrefs.DeleteKey("RightCard");
+        PlayerPrefs.Save();
 
-        playerScores = new int[totalPlayers];
-        victoryTokens = new int[totalPlayers];
-        allPlayersCardData = new PlayerCardData[totalPlayers];
+        currentRound = 1;
 
-        for (int i = 0; i < totalPlayers; i++)
+        foreach (Player player in activePlayers)
         {
-            playerScores[i] = 0;
-            victoryTokens[i] = 0;
-            allPlayersCardData[i] = new PlayerCardData();
-        }
-
-        Debug.Log($"Game initialized - Total players: {totalPlayers} (AI: {aiPlayerCount})");
-    }
-
-    public void SetGamePhase(GamePhase newPhase)
-    {
-        currentPhase = newPhase;
-        Debug.Log($"Game phase changed to: {newPhase}");
-    }
-
-    public void NextRound()
-    {
-        currentRound++;
-        SetGamePhase(GamePhase.CardSelection);
-        Debug.Log($"Round {currentRound} started");
-    }
-
-    public void AddScore(int playerIndex, int score)
-    {
-        if (playerIndex >= 0 && playerIndex < playerScores.Length)
-        {
-            playerScores[playerIndex] += score;
-            string playerType = (playerIndex == 0) ? "(You)" : "(AI)";
-            Debug.Log($"Player {playerIndex + 1}{playerType}: +{score} points (Total: {playerScores[playerIndex]})");
+            playerData[player] = new PlayerData();
         }
     }
 
-    public void AddVictoryToken(int playerIndex)
+    // reset entire game to initial state
+    public void ResetGame()
     {
-        if (playerIndex >= 0 && playerIndex < victoryTokens.Length)
+        PlayerPrefs.DeleteAll();
+        PlayerPrefs.Save();
+
+        currentRound = 1;
+        currentRoundSubmissions.Clear();
+
+        foreach (Player player in activePlayers)
         {
-            victoryTokens[playerIndex]++;
-            string playerType = (playerIndex == 0) ? "(You)" : "(AI)";
-            Debug.Log($"Player {playerIndex + 1}{playerType}: +1 victory token (Total: {victoryTokens[playerIndex]})");
+            playerData[player] = new PlayerData();
         }
     }
 
-    public int GetTotalPlayers()
+    // check if game is over (human failed to survive)
+    public bool IsGameOver() => currentRound > maxRounds && !playerData[Player.Human].isSurvivor;
+
+    // check if human player survived
+    public bool IsHumanSurvivor() => playerData[Player.Human].isSurvivor;
+
+    // check if game is completed (win or lose)
+    public bool IsGameCompleted() => IsHumanSurvivor() || IsGameOver();
+
+    // check if current round is a survival round
+    public bool ShouldShowSurvivalRound() => currentRound == 3 || currentRound == 6;
+
+    // get list of players who are still active (not eliminated or survived)
+    public List<Player> GetActivePlayers()
     {
-        return aiPlayerCount + 1;
+        return activePlayers.Where(p => !playerData[p].isEliminated && !playerData[p].isSurvivor).ToList();
     }
 
-    public bool IsGameOver()
+    // get player data for specific player
+    public PlayerData GetPlayerData(Player player) => playerData.ContainsKey(player) ? playerData[player] : null;
+
+    // eliminate player from game
+    public void EliminatePlayer(Player player) => playerData[player].isEliminated = true;
+
+    // set last round winner
+    public void SetLastWinner(Player winner) => lastWinner = winner;
+
+    // get last round winner
+    public Player GetLastWinner() => lastWinner;
+
+    // add points to player
+    public void AddPoint(Player player, int points)
     {
-        return currentRound > maxRounds;
+        playerData[player].points += points;
     }
 
-    // AI Card Selection for current round
+    // generate random card selections for AI players
     public void GenerateAISelections()
     {
-        for (int playerIndex = 1; playerIndex < allPlayersCardData.Length; playerIndex++) // Skip human player (index 0)
+        foreach (Player player in GetActivePlayers().Where(p => p.IsAI()))
         {
-            PlayerCardData playerData = allPlayersCardData[playerIndex];
+            var data = playerData[player];
+            var playable = data.GetPlayableCards();
 
-            // Get available cards (not disabled)
-            List<int> availableCards = new List<int>();
-            foreach (int card in playerData.availableCards)
+            if (playable.Count >= 2)
             {
-                if (!playerData.disabledCards.Contains(card))
+                var selected = new HashSet<int>();
+                while (selected.Count < 2)
                 {
-                    availableCards.Add(card);
+                    int randomCard = playable[Random.Range(0, playable.Count)];
+                    selected.Add(randomCard);
                 }
-            }
 
-            if (availableCards.Count >= 2)
-            {
-                // Simple AI: randomly select 2 different available cards
-                int firstIndex = Random.Range(0, availableCards.Count);
-                int firstCard = availableCards[firstIndex];
-                availableCards.RemoveAt(firstIndex);
-
-                int secondIndex = Random.Range(0, availableCards.Count);
-                int secondCard = availableCards[secondIndex];
-
-                playerData.selectedLeftCard = firstCard;
-                playerData.selectedRightCard = secondCard;
-
-                Debug.Log($"AI Player {playerIndex} selected: {firstCard}, {secondCard} (Available: {availableCards.Count + 2})");
-            }
-            else
-            {
-                Debug.LogWarning($"AI Player {playerIndex} doesn't have enough available cards!");
+                var selectedArray = selected.ToArray();
+                data.selectedLeftCard = selectedArray[0];
+                data.selectedRightCard = selectedArray[1];
             }
         }
     }
 
-    // Process card submission for a player
-    public void ProcessCardSubmission(int playerIndex, int submittedCard, int tempStorageCard)
+    // process player's card submission (remove used card, add temp card to disabled)
+    public void ProcessSubmission(Player player, int submittedCard, int tempCard)
     {
-        if (playerIndex >= 0 && playerIndex < allPlayersCardData.Length)
+        var data = playerData[player];
+
+        data.availableCards.Remove(submittedCard);
+        data.disabledCards.Clear();
+
+        if (tempCard > 0)
         {
-            PlayerCardData playerData = allPlayersCardData[playerIndex];
-
-            // Remove submitted card from available cards
-            playerData.availableCards.Remove(submittedCard);
-
-            // Add temp storage card to disabled list
-            if (!playerData.disabledCards.Contains(tempStorageCard))
-            {
-                playerData.disabledCards.Add(tempStorageCard);
-            }
-
-            string playerType = (playerIndex == 0) ? "(You)" : "(AI)";
-            Debug.Log($"Player {playerIndex + 1}{playerType}: Submitted {submittedCard}, Temp storage {tempStorageCard}");
+            data.disabledCards.Add(tempCard);
         }
     }
 
-    // Clear disabled cards for next round (after one round restriction)
+    // clear disabled cards for all players (used between rounds)
     public void ClearDisabledCards()
     {
-        foreach (PlayerCardData playerData in allPlayersCardData)
+        foreach (var kvp in playerData)
         {
-            playerData.disabledCards.Clear();
+            kvp.Value.disabledCards.Clear();
         }
-        Debug.Log("All disabled cards cleared for new round");
     }
 
-    // Get player's available cards
-    public List<int> GetAvailableCards(int playerIndex)
+    // set player's submitted card for current round
+    public void SetPlayerSubmission(Player player, int cardNumber)
     {
-        if (playerIndex >= 0 && playerIndex < allPlayersCardData.Length)
-        {
-            PlayerCardData playerData = allPlayersCardData[playerIndex];
-            List<int> available = new List<int>();
+        currentRoundSubmissions[player] = cardNumber;
+    }
 
-            foreach (int card in playerData.availableCards)
-            {
-                if (!playerData.disabledCards.Contains(card))
-                {
-                    available.Add(card);
-                }
-            }
-            return available;
+    // get all current round submissions
+    public Dictionary<Player, int> GetCurrentSubmissions()
+    {
+        return new Dictionary<Player, int>(currentRoundSubmissions);
+    }
+
+    // clear all round submissions
+    public void ClearSubmissions()
+    {
+        currentRoundSubmissions.Clear();
+    }
+
+    // mark player as survivor
+    public void SetPlayerAsSurvivor(Player player)
+    {
+        playerData[player].isSurvivor = true;
+    }
+
+    // reset points for all non-survivor players
+    public void ResetNonSurvivorPoints()
+    {
+        foreach (var player in GetActivePlayers())
+        {
+            playerData[player].points = 0;
         }
-        return new List<int>();
+    }
+
+    // reset all players' cards to initial state (1-8)
+    public void ResetAllCards()
+    {
+        foreach (var player in GetActivePlayers())
+        {
+            var data = playerData[player];
+            data.availableCards = new List<int> { 1, 2, 3, 4, 5, 6, 7, 8 };
+            data.disabledCards.Clear();
+        }
     }
 }
