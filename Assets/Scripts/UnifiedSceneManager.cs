@@ -78,17 +78,20 @@ public class UnifiedSceneManager : MonoBehaviour
 
     IEnumerator ShowRoundNumber()
     {
-        if (roundDisplayPanel)
+        if (roundDisplayPanel && roundNumberText)
         {
             roundDisplayPanel.SetActive(true);
             CanvasGroup canvasGroup = roundDisplayPanel.GetComponent<CanvasGroup>();
+            if (canvasGroup == null) canvasGroup = roundDisplayPanel.AddComponent<CanvasGroup>();
+
             canvasGroup.alpha = 1f;
-            yield return new WaitForSeconds(2f);
-            yield return StartCoroutine(FadeOut(canvasGroup, 0.5f));
 
             int round = GameManager.Instance?.currentRound ?? 1;
             bool isSettlement = new int[] { 3, 6, 9, 12, 18 }.Contains(round);
             roundNumberText.text = isSettlement ? $"ROUND {round}\n* SURVIVAL ROUND *" : $"ROUND {round}";
+
+            yield return new WaitForSeconds(2f);
+            yield return StartCoroutine(FadeOut(canvasGroup, 0.5f));
             roundDisplayPanel.SetActive(false);
         }
     }
@@ -106,12 +109,19 @@ public class UnifiedSceneManager : MonoBehaviour
 
     void OnCardClicked_Selection(BaseCard card)
     {
-        if (card.IsDisabled()) return;
+        Debug.Log($"Card {card.GetCardNumber()} clicked. IsDisabled: {card.IsDisabled()}");
+
+        if (card.IsDisabled())
+        {
+            Debug.Log($"Card {card.GetCardNumber()} is disabled - click ignored");
+            return;
+        }
 
         if (leftZoneCard == null)
         {
             leftZoneCard = card;
             card.MoveToZone(leftZone);
+            Debug.Log($"Card {card.GetCardNumber()} moved to left zone");
         }
         else if (rightZoneCard == null && card != leftZoneCard)
         {
@@ -136,7 +146,7 @@ public class UnifiedSceneManager : MonoBehaviour
     {
         int leftCard = leftZoneCard.GetCardNumber();
         int rightCard = rightZoneCard.GetCardNumber();
-        
+
         PlayerPrefs.SetInt("LeftCard", leftCard);
         PlayerPrefs.SetInt("RightCard", rightCard);
         PlayerPrefs.SetInt("CurrentRound", GameManager.Instance?.currentRound ?? 1);
@@ -161,7 +171,7 @@ public class UnifiedSceneManager : MonoBehaviour
     {
         CreateFieldCards();
         SetupAIPanels();
-        SetupSubmitArea();
+        // SetupSubmitArea();
     }
 
     void CreateFieldCards()
@@ -250,7 +260,12 @@ public class UnifiedSceneManager : MonoBehaviour
     {
         Vector2 originalPos = card.GetComponent<RectTransform>().localPosition;
 
-        if (submitAreaImage) submitAreaImage.color = normalAreaColor;
+        if (submitAreaImage)
+        {
+            Color subColor = submitAreaImage.color;
+            submitAreaImage.color = normalAreaColor;
+            subColor.a = 0f;
+        }
 
         if (IsCardInSubmitArea(card))
         {
@@ -282,7 +297,13 @@ public class UnifiedSceneManager : MonoBehaviour
     void ProcessSubmission(BaseCard card)
     {
         int submitted = card.GetCardNumber();
-        int temp = allCards.FirstOrDefault(c => c != card)?.GetCardNumber() ?? 0;
+
+        var otherCard = allCards.FirstOrDefault(c => c != card);
+        int temp = otherCard?.GetCardNumber() ?? 0;
+
+        Debug.Log($"=== Human Submission ===");
+        Debug.Log($"Submitted card: {submitted}");
+        Debug.Log($"Temp storage card: {temp}");
 
         GameManager.Instance?.ProcessSubmission(Player.Human, submitted, temp);
         GameManager.Instance?.SetPlayerSubmission(Player.Human, submitted);
@@ -292,9 +313,7 @@ public class UnifiedSceneManager : MonoBehaviour
         ProcessAISubmissions();
 
         SceneManager.LoadScene("ResultScene");
-        StartResultScene();
     }
-
     void ProcessAISubmissions()
     {
         var activeAI = GameManager.Instance?.GetActivePlayers().Where(p => p.IsAI()) ?? new List<Player>();
@@ -307,6 +326,8 @@ public class UnifiedSceneManager : MonoBehaviour
                 bool chooseLeft = Random.value < 0.5f;
                 int submitted = chooseLeft ? data.selectedLeftCard : data.selectedRightCard;
                 int temp = chooseLeft ? data.selectedRightCard : data.selectedLeftCard;
+
+                Debug.Log($"AI {player.GetDisplayName()} submission: submitted={submitted}, temp={temp}");
 
                 GameManager.Instance?.ProcessSubmission(player, submitted, temp);
                 GameManager.Instance?.SetPlayerSubmission(player, submitted);
@@ -328,7 +349,7 @@ public class UnifiedSceneManager : MonoBehaviour
             {
                 var leftSprite = normalSprites[data.selectedLeftCard - 1];
                 var rightSprite = normalSprites[data.selectedRightCard - 1];
-                aiPanels[i].Setup(player.GetDisplayName(), data.victoryTokens, leftSprite, rightSprite);
+                aiPanels[i].Setup(player.GetDisplayName(), data.victoryTokens, data.points, leftSprite, rightSprite);
             }
         }
     }
@@ -443,10 +464,10 @@ public class UnifiedSceneManager : MonoBehaviour
                 textComponent.text = player.GetShortName();
             }
 
-            Debug.Log($"Created text for {player.GetDisplayName()} at position {textRect.localPosition}");
+            // Debug.Log($"Created text for {player.GetDisplayName()} at position {textRect.localPosition}");
         }
 
-        Debug.Log($"Card {cardNumber} sprite set: {card.normalSprite?.name ?? "NULL"}");
+        // Debug.Log($"Card {cardNumber} sprite set: {card.normalSprite?.name ?? "NULL"}");
 
         var nameText = cardObj.GetComponentInChildren<TextMeshProUGUI>();
         if (nameText != null)
@@ -481,7 +502,7 @@ public class UnifiedSceneManager : MonoBehaviour
 
                     if (aiPanels[i] != null)
                     {
-                        aiPanels[i].Setup(player.GetDisplayName(), data.victoryTokens, leftSprite, rightSprite);
+                        aiPanels[i].Setup(player.GetDisplayName(), data.victoryTokens, data.points, leftSprite, rightSprite);
                     }
                 }
             }
@@ -496,17 +517,17 @@ public class UnifiedSceneManager : MonoBehaviour
         CreateWinnerReasonUI();
 
         var uniqueCards = submissions
-            .GroupBy(x => x.Value)                    
-            .Where(g => g.Count() == 1)               
-            .OrderBy(g => g.Key)                      
+            .GroupBy(x => x.Value)
+            .Where(g => g.Count() == 1)
+            .OrderBy(g => g.Key)
             .ToList();
 
         if (uniqueCards.Any())
         {
             var winner = uniqueCards.First().First();
             var winningCard = uniqueCards.First().Key;
-            
-            GameManager.Instance?.AddScore(winner.Key, winningCard);
+
+            GameManager.Instance?.AddPoint(winner.Key, winningCard);
             var winnerData = GameManager.Instance?.GetPlayerData(winner.Key);
             if (winnerData != null) winnerData.victoryTokens += 1;
 
@@ -576,11 +597,12 @@ public class UnifiedSceneManager : MonoBehaviour
         }
 
         GameManager.Instance?.ClearSubmissions();
-        GameManager.Instance?.ClearDisabledCards();
+        // GameManager.Instance?.ClearDisabledCards();
 
         if (GameManager.Instance != null)
         {
             GameManager.Instance.currentRound++;
+            Debug.Log($"Round advanced to: {GameManager.Instance.currentRound}");
         }
 
         nextRoundButton.SetActive(false);
@@ -593,7 +615,7 @@ public class UnifiedSceneManager : MonoBehaviour
         {
             currentReasonUI = Instantiate(winnerReasonPrefab, uiParent);
             reasonText = currentReasonUI.GetComponentInChildren<TextMeshProUGUI>();
-            
+
             if (reasonText != null)
             {
                 reasonText.text = ""; // 초기화
@@ -605,15 +627,66 @@ public class UnifiedSceneManager : MonoBehaviour
     #region Common Methods
     void CreateCards(bool isDraggable)
     {
-        var availableCards = GameManager.Instance?.GetPlayerData(Player.Human)?.GetPlayableCards()
-                           ?? new List<int> { 1, 2, 3, 4, 5, 6, 7, 8 };
-
-        for (int i = 0; i < 8; i++)
+        if (GameManager.Instance == null)
         {
-            CreateCard(i + 1, GetCardPosition(i), isDraggable);
+            Debug.LogError("GameManager.Instance is null!");
+            return;
+        }
+        
+        var playerData = GameManager.Instance.GetPlayerData(Player.Human);
+        if (playerData == null)
+        {
+            Debug.LogError("Human player data is null!");
+            return;
+        }
+        
+        var availableCards = playerData.availableCards;
+        var disabledCards = playerData.disabledCards;
+        
+        Debug.Log($"=== Round {GameManager.Instance.currentRound} Card Creation ===");
+        Debug.Log($"Available cards: {string.Join(", ", availableCards)}");
+        Debug.Log($"Disabled cards: {string.Join(", ", disabledCards)}");
 
-            if (!availableCards.Contains(i + 1))
-                allCards[i].SetDisabledState();
+        allCards.Clear();
+
+        var allCardsToShow = new HashSet<int>(availableCards);
+        foreach (int disabledCard in disabledCards)
+        {
+            allCardsToShow.Add(disabledCard);
+        }
+
+        var sortedCards = new List<int>(allCardsToShow);
+        sortedCards.Sort();
+
+        Debug.Log($"Cards to show: {string.Join(", ", sortedCards)}");
+        
+        for (int i = 0; i < sortedCards.Count; i++)
+        {
+            int cardNumber = sortedCards[i];
+            Vector3 position = GetCardPositionByIndex(i); 
+            
+            CreateCard(cardNumber, position, isDraggable);
+
+            if (allCards.Count > 0)
+            {
+                var currentCard = allCards[allCards.Count - 1];
+
+                Debug.Log($"Setting state for card {cardNumber}. Is in disabled list: {disabledCards.Contains(cardNumber)}");
+
+
+                if (disabledCards.Contains(cardNumber))
+                {
+                    currentCard.SetDisabledState();
+                    Debug.Log($"Card {cardNumber} is disabled (temp storage)");
+                }
+                else
+                {
+                    currentCard.SetNormalState();
+                    Debug.Log($"Card {cardNumber} is active");
+                }
+                Debug.Log($"Card {cardNumber} final state - IsDisabled(): {currentCard.IsDisabled()}");
+
+            }
         }
 
         // Set up card selection events
@@ -624,23 +697,81 @@ public class UnifiedSceneManager : MonoBehaviour
                 card.OnCardClicked += OnCardClicked_Selection;
             }
         }
+        
+        Debug.Log($"=== Card Creation Complete: {allCards.Count} cards created ===");
+    }
+
+    Vector3 GetCardPositionByIndex(int index)
+    {
+        if (index < 4)
+        {
+            return new Vector3(-375f + index * 250f, 50f, 0);
+        }
+        else
+        {
+            return new Vector3(-375f + (index - 4) * 250f, -300f, 0);
+        }
     }
 
     void CreateCard(int cardNumber, Vector3 position, bool isDraggable, bool useCardPrefab = true)
     {
-        // Choose prefab based on size requirement
         GameObject prefabToUse = useCardPrefab ? cardPrefab : fieldCardPrefab;
+        
+        if (prefabToUse == null)
+        {
+            Debug.LogError($"Card prefab is null! useCardPrefab={useCardPrefab}");
+            return;
+        }
+        
+        if (cardParent == null)
+        {
+            Debug.LogError("CardParent is null!");
+            return;
+        }
+        
         var cardObj = Instantiate(prefabToUse, cardParent);
         var card = cardObj.GetComponent<BaseCard>();
 
+        if (card == null)
+        {
+            Debug.LogError("BaseCard component not found on instantiated card!");
+            return;
+        }
+
         card.SetCardNumber(cardNumber);
-        card.normalSprite = normalSprites[cardNumber - 1];
-        card.selectedSprite = selectedSprites[cardNumber - 1];
-        card.disabledSprite = disabledSprites[cardNumber - 1];
+        
+        if (normalSprites != null && cardNumber > 0 && cardNumber <= normalSprites.Length)
+        {
+            card.normalSprite = normalSprites[cardNumber - 1];
+            if (selectedSprites != null && selectedSprites.Length >= cardNumber)
+            {
+                card.selectedSprite = selectedSprites[cardNumber - 1];
+            }
+            if (disabledSprites != null && disabledSprites.Length >= cardNumber)
+            {
+                card.disabledSprite = disabledSprites[cardNumber - 1];
+            }
+            
+            Debug.Log($"Card {cardNumber} sprites assigned successfully");
+        }
+        else
+        {
+            Debug.LogError($"Invalid card number {cardNumber} or sprite arrays not properly set. normalSprites length: {normalSprites?.Length ?? 0}");
+        }
+        
         card.SetDraggable(isDraggable);
 
-        cardObj.GetComponent<RectTransform>().localPosition = position;
+        var rectTransform = cardObj.GetComponent<RectTransform>();
+        if (rectTransform != null)
+        {
+            rectTransform.localPosition = position;
+        }
+
+        // card.Initialize();
+        
         allCards.Add(card);
+        
+        Debug.Log($"Card {cardNumber} created at position {position}");
     }
 
     Vector3 GetCardPosition(int index)
@@ -649,7 +780,6 @@ public class UnifiedSceneManager : MonoBehaviour
             new Vector3(-375f + index * 250f, 50f, 0) :
             new Vector3(-375f + (index - 4) * 250f, -300f, 0);
     }
-
     void ClearScene()
     {
         foreach (var card in allCards)
@@ -666,5 +796,6 @@ public class UnifiedSceneManager : MonoBehaviour
             }
         }
     }
+    
     #endregion
 }

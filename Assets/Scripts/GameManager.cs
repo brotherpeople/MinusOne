@@ -19,7 +19,7 @@ public class GameManager : MonoBehaviour
     [System.Serializable]
     public class PlayerData
     {
-        public int score = 0;
+        public int points = 0;
         public int victoryTokens = 0;
         public bool isEliminated = false;
         public List<int> availableCards = new List<int> { 1, 2, 3, 4, 5, 6, 7, 8 };
@@ -46,10 +46,37 @@ public class GameManager : MonoBehaviour
 
     void InitializeGame()
     {
+        PlayerPrefs.DeleteKey("CurrentRound");
+        PlayerPrefs.DeleteKey("LeftCard");
+        PlayerPrefs.DeleteKey("RightCard");
+        PlayerPrefs.Save();
+
+        currentRound = 1;
+
+        foreach (Player player in activePlayers)
+        {
+            playerData[player] = new PlayerData();
+            Debug.Log($"Initialized {player.GetDisplayName()} with cards: {string.Join(", ", playerData[player].availableCards)}");
+        }
+    }
+
+    // Reset game completely (for new game)
+    public void ResetGame()
+    {
+        // Clear all PlayerPrefs
+        PlayerPrefs.DeleteAll();
+        PlayerPrefs.Save();
+        
+        currentRound = 1;
+        currentRoundSubmissions.Clear();
+        
+        // Reset all player data
         foreach (Player player in activePlayers)
         {
             playerData[player] = new PlayerData();
         }
+        
+        Debug.Log("Game completely reset");
     }
 
     // Unified player access methods
@@ -57,10 +84,10 @@ public class GameManager : MonoBehaviour
     public PlayerData GetPlayerData(Player player) => playerData.ContainsKey(player) ? playerData[player] : null;
     public void EliminatePlayer(Player player) => playerData[player].isEliminated = true;
 
-    public void AddScore(Player player, int score)
+    public void AddPoint(Player player, int points)
     {
-        playerData[player].score += score;
-        Debug.Log($"{player.GetDisplayName()}: +{score} points");
+        playerData[player].points += points;
+        Debug.Log($"{player.GetDisplayName()}: +{points} points (Total: {playerData[player].points})");
     }
 
     public void GenerateAISelections()
@@ -70,11 +97,23 @@ public class GameManager : MonoBehaviour
             var data = playerData[player];
             var playable = data.GetPlayableCards();
 
+            // Debug.Log($"AI {player.GetDisplayName()} playable cards: {string.Join(", ", playable)}");
+
             if (playable.Count >= 2)
             {
-                var selected = playable.OrderBy(x => Random.value).Take(2).ToArray();
-                data.selectedLeftCard = selected[0];
-                data.selectedRightCard = selected[1];
+                // Use HashSet to avoid duplicates
+                var selected = new HashSet<int>();
+                while (selected.Count < 2)
+                {
+                    int randomCard = playable[Random.Range(0, playable.Count)];
+                    selected.Add(randomCard);
+                }
+                
+                var selectedArray = selected.ToArray();
+                data.selectedLeftCard = selectedArray[0];
+                data.selectedRightCard = selectedArray[1];
+                
+                Debug.Log($"AI {player.GetDisplayName()} selected: Left={data.selectedLeftCard}, Right={data.selectedRightCard}");
             }
         }
     }
@@ -82,16 +121,36 @@ public class GameManager : MonoBehaviour
     public void ProcessSubmission(Player player, int submittedCard, int tempCard)
     {
         var data = playerData[player];
-        data.availableCards.Remove(submittedCard);
-        data.disabledCards.Add(tempCard);
+        
+        // Debug.Log($"=== {player.GetDisplayName()} Submission Processing ===");
+        // Debug.Log($"Before - Available: [{string.Join(",", data.availableCards)}]");
+        // Debug.Log($"Before - Disabled: [{string.Join(",", data.disabledCards)}]");
+        // Debug.Log($"Submitted: {submittedCard}, Temp: {tempCard}");
+        
+        bool removed = data.availableCards.Remove(submittedCard);
+        Debug.Log($"Removed {submittedCard} from available: {removed}");
+        
+        data.disabledCards.Clear();
+        Debug.Log("Cleared previous disabled cards");
+        
+        if (tempCard > 0)
+        {
+            data.disabledCards.Add(tempCard);
+            Debug.Log($"Added {tempCard} to disabled (next round only)");
+        }
+        
+        Debug.Log($"After - Available: [{string.Join(",", data.availableCards)}]");
+        Debug.Log($"After - Disabled: [{string.Join(",", data.disabledCards)}]");
+        Debug.Log($"=== End {player.GetDisplayName()} Processing ===");
     }
-
     public void ClearDisabledCards()
     {
-        foreach (var data in playerData.Values)
+        foreach (var kvp in playerData)
         {
-            data.disabledCards.Clear();
+            Debug.Log($"Clearing disabled cards for {kvp.Key.GetDisplayName()}: [{string.Join(",", kvp.Value.disabledCards)}]");
+            kvp.Value.disabledCards.Clear();
         }
+        Debug.Log("All disabled cards cleared for next round");
     }
     public void SetPlayerSubmission(Player player, int cardNumber)
     {

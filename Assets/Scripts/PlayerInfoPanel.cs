@@ -7,13 +7,15 @@ public class PlayerInfoPanel : MonoBehaviour
     [Header("UI Elements")]
     public TextMeshProUGUI playerNameText;
     public TextMeshProUGUI victoryTokenText;
+    public TextMeshProUGUI pointText;
     public Image leftCardImage;
     public Image rightCardImage;
 
-    public void Setup(string playerName, int tokens, Sprite leftSprite, Sprite rightSprite)
+    public void Setup(string playerName, int tokens, int points, Sprite leftSprite, Sprite rightSprite)
     {
         if (playerNameText) playerNameText.text = playerName;
-        if (victoryTokenText) victoryTokenText.text = $"TOKENS: {tokens}";
+        if (victoryTokenText) victoryTokenText.text = $"Tokens: {tokens}";
+        if (pointText) pointText.text = $"Points: {points}";
         if (leftCardImage) leftCardImage.sprite = leftSprite;
         if (rightCardImage) rightCardImage.sprite = rightSprite;
     }
