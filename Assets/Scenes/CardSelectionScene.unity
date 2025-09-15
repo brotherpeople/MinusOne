@@ -196,7 +196,9 @@ MonoBehaviour:
   - {fileID: 0}
   - {fileID: 0}
   playerTextPrefab: {fileID: 0}
+  textBoxPrefab: {fileID: 0}
   shouldBeFadedOutText: {fileID: 0}
+  fieldPanel: {fileID: 0}
   nextRoundButton: {fileID: 0}
   winnerReasonPrefab: {fileID: 0}
   uiParent: {fileID: 0}

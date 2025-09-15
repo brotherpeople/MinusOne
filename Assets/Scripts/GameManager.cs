@@ -36,6 +36,8 @@ public class GameManager : MonoBehaviour
     // ensure singleton instance and initialize game
     void Awake()
     {
+        Screen.SetResolution(1080, 1920, false);
+
         if (Instance == null)
         {
             Instance = this;
